@@ -6,6 +6,28 @@ import datetime, time
 import xml.etree.ElementTree as etree
 
 
+class QuickbaseApp():
+    def __init__(self, baseurl, ticket, tables, token=None):
+        self.base_url = baseurl
+        self.ticket = ticket
+        self.token = token
+        self.tables = tables
+
+
+class QuickbaseAction():
+    def __init__(self, app, dbid_key, action):
+        self.query = urllib.request.Request(app.base_url + app.tables[dbid_key])
+        if action.lower() == "query":
+            self.action = "API_DoQuery"
+        elif action.lower() == "add":
+            self.action = "API_AddRecord"
+        elif action.lower() == "edit" or action.lower() == "csv":
+            self.action = "API_ImportFromCSV"
+        self.query.add_header("Content-Type", "application/xml")
+        self.query.add_header("QUICKBASE-ACTION", self.action)
+    def performAction(self, query=None, clist=None, slist=None, return_records=None, data=None, skip_first=None):
+        pass
+        # if self.action == "API_doQuery"
 class Eastern_tzinfo(datetime.tzinfo):
     """Implementation of the Eastern timezone."""
 
