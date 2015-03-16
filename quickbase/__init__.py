@@ -8,6 +8,14 @@ import xml.etree.ElementTree as etree
 
 class QuickbaseApp():
     def __init__(self, baseurl, ticket, tables, token=None):
+        """Basic unit storing useful information for communicating with Quickbase
+
+        :param baseurl: String, https://<domain>.quickbase.com/db/
+        :param ticket: String, taken from quickbase cookie
+        :param tables: Dict, map of dbid labels and dbid values
+        :param token: For future use
+        :return:
+        """
         self.base_url = baseurl
         self.ticket = ticket
         self.token = token
@@ -15,19 +23,148 @@ class QuickbaseApp():
 
 
 class QuickbaseAction():
-    def __init__(self, app, dbid_key, action):
-        self.query = urllib.request.Request(app.base_url + app.tables[dbid_key])
+    def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None, skip_first="0"):
+        """
+
+        :param app: class QuickbaseApp
+        :param dbid_key: dbid label
+        :param action: query, add, edit or csv
+        :return:
+        """
+        self.app = app
+        self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
+        self.action_string = action.lower()
         if action.lower() == "query":
             self.action = "API_DoQuery"
         elif action.lower() == "add":
             self.action = "API_AddRecord"
-        elif action.lower() == "edit" or action.lower() == "csv":
+        elif action.lower() == "edit" or self.action.lower() == "csv":
             self.action = "API_ImportFromCSV"
-        self.query.add_header("Content-Type", "application/xml")
-        self.query.add_header("QUICKBASE-ACTION", self.action)
-    def performAction(self, query=None, clist=None, slist=None, return_records=None, data=None, skip_first=None):
-        pass
-        # if self.action == "API_doQuery"
+        self.request.add_header("Content-Type", "application/xml")
+        self.request.add_header("QUICKBASE-ACTION", self.action)
+        self.return_records = return_records
+
+        if self.action_string == "query":
+            if "query=" in query:
+                v, query = query.split("=", 1)
+            if slist == "0":
+                self.data = """
+                <qdbapi>
+                <ticket>%s</ticket>
+                <query>%s</query>
+                <clist>%s</clist>
+                </qdbapi>
+                """ % (self.app.ticket, query, clist)
+            else:
+                self.data = """
+                <qdbapi>
+                <ticket>%s</ticket>
+                <query>%s</query>
+                <clist>%s</clist>
+                <slist>%s</slist>
+                </qdbapi>
+                """ % (self.app.ticket, query, clist, slist)
+            self.request.data = data.encode('utf-8')
+        elif self.action_string == "add":
+            assert type(data) == dict
+            recordInfo = ""
+            for field in data:
+                recordInfo += '<field fid="' + str(field) + '">' + str(data[field]) + "</field>\n"
+            self.data = """
+            <qdbapi>
+            <ticket>%s</ticket>
+            %s
+            </qdbapi>
+            """ % (self.app.ticket, recordInfo)
+            self.request.data = data.encode('utf-8')
+        elif self.action_string == "edit" or self.action_string == "csv":
+            if type(data) == str:
+                data = """
+                <qdbapi>
+                    <ticket>%s</ticket>
+                    <records_csv>
+                        <![CDATA[
+                            %s
+                        ]]>
+                    </records_csv>
+                    <clist>%s</clist>
+                    <skipfirst>%s</skipfirst>
+                </qdbapi>
+                    """ % (self.app.ticket, data, clist, skip_first)
+            elif type(data) == list:
+                csv_lines = ""
+                if type(data[0]) == list:
+                    for line in data:
+                        for item in line:
+                            assert type(item) == str
+                            csv_lines += item + ","
+                        csv_lines = csv_lines[:-1] + "\n"
+                elif type(data[0]) == str:
+                    for item in data:
+                        assert item == str
+                        csv_lines += item + ","
+                    csv_lines = csv_lines[:-1] + "\n"
+                data = """
+                <qdbapi>
+                    <ticket>%s</ticket>
+                    <records_csv>
+                        <![CDATA[
+                            %s
+                        ]]>
+                    </records_csv>
+                    <clist>%s</clist>
+                    <skipfirst>%s</skipfirst>
+                </qdbapi>
+                    """ % (self.app.ticket, csv_lines, clist, skip_first)
+            elif type(data) == dict:
+                csv_lines = ""
+                for record_id in data:
+                    assert type(record_id) == str and type(data[record_id]) == list
+                    line = data[record_id]
+                    csv_lines += record_id
+                    for item in line:
+                        assert type(item) == str
+                        csv_lines += item + ","
+                    csv_lines = csv_lines[:-1] + "\n"
+                data = """
+                <qdbapi>
+                    <ticket>%s</ticket>
+                    <records_csv>
+                        <![CDATA[
+                            %s
+                        ]]>
+                    </records_csv>
+                    <clist>%s</clist>
+                    <skipfirst>%s</skipfirst>
+                </qdbapi>
+                    """ % (self.app.ticket, csv_lines, clist, "0")
+            self.request.data = data.encode('utf-8')
+
+
+    def performAction(self, ):
+        """
+
+        :param query:
+        :param clist:
+        :param slist:
+        :param return_records:
+        :param data:
+        :param skip_first:
+        :return:
+        """
+
+
+
+        content = urllib.request.urlopen(self.request).readall()
+        if not self.return_records:
+            return content
+        else:
+            return etree.fromstring(content).findall('record')
+
+            response = urllib.request.urlopen(self.request).readall()
+            return response
+
+
 class Eastern_tzinfo(datetime.tzinfo):
     """Implementation of the Eastern timezone."""
 
@@ -194,9 +331,9 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     :return: response contains troubleshooting information including error code and value, count of records added,
     and count of records edited.
     """
-    query = urllib.request.Request(url+dbid)
-    query.add_header("Content-Type", "application/xml")
-    query.add_header("QUICKBASE-ACTION", "API_ImportFromCSV")
+    request = urllib.request.Request(url+dbid)
+    request.add_header("Content-Type", "application/xml")
+    request.add_header("QUICKBASE-ACTION", "API_ImportFromCSV")
     if type(csvData) == str:
         data = """
         <qdbapi>
@@ -257,6 +394,8 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
             <skipfirst>%s</skipfirst>
         </qdbapi>
             """ % (ticket, csv_lines, clist, "0")
-    query.data = data.encode('utf-8')
-    response = urllib.request.urlopen(query).readall()
+    else:
+        return None
+    request.data = data.encode('utf-8')
+    response = urllib.request.urlopen(request).readall()
     return response
