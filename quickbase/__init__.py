@@ -43,6 +43,7 @@ class QuickbaseAction():
         self.request.add_header("Content-Type", "application/xml")
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records
+        self.response = None
 
         if self.action_string == "query":
             if "query=" in query:
@@ -140,29 +141,18 @@ class QuickbaseAction():
                     """ % (self.app.ticket, csv_lines, clist, "0")
             self.request.data = data.encode('utf-8')
 
+    def performAction(self):
+        """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
 
-    def performAction(self, ):
+        :return: response
         """
-
-        :param query:
-        :param clist:
-        :param slist:
-        :param return_records:
-        :param data:
-        :param skip_first:
-        :return:
-        """
-
-
-
         content = urllib.request.urlopen(self.request).readall()
+        self.response = etree.fromstring(content).findall('record')
         if not self.return_records:
             return content
         else:
-            return etree.fromstring(content).findall('record')
+            return self.response
 
-            response = urllib.request.urlopen(self.request).readall()
-            return response
 
 
 class Eastern_tzinfo(datetime.tzinfo):
