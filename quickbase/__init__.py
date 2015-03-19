@@ -4,6 +4,7 @@ __author__ = 'Herman'
 import urllib.request, urllib.parse
 import datetime, time
 import xml.etree.ElementTree as etree
+import csv
 
 
 class QuickbaseApp():
@@ -181,6 +182,15 @@ class Eastern_tzinfo(datetime.tzinfo):
             return "EST"
         else:
             return "EDT"
+
+
+def generateTableDict(import_filename):
+    table_dict = dict()
+    with open(import_filename, 'r') as csv_file:
+        r = csv.reader(csv_file)
+        for row in r:
+            table_dict[row[1]] = row[2]
+    return table_dict
 
 
 def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords = False):
