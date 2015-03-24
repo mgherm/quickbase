@@ -148,12 +148,32 @@ class QuickbaseAction():
         :return: response
         """
         content = urllib.request.urlopen(self.request).readall()
-        self.response = etree.fromstring(content).findall('record')
+        self.raw_response = etree.fromstring(content).findall('record')
+        self.response = QuickbaseResponse(self.raw_response)
         if not self.return_records:
             return content
         else:
-            return self.response
+            return self.raw_response
 
+
+class QuickbaseResponse():
+    def __init__(self, response):
+        if not response.find('record'):
+            self.records = response
+            self.values = []
+            for record in self.records:
+                record_dict = dict()
+                for item in record:
+                    record_dict[item.tag] = item.text
+                self.values.append(record_dict)
+        else:
+            self.records = response.findall('records')
+            self.values = []
+            for record in self.records:
+                record_dict = dict()
+                for item in record:
+                    record_dict[item.tag] = item.text
+                self.values.append(record_dict)
 
 
 class Eastern_tzinfo(datetime.tzinfo):
@@ -190,6 +210,7 @@ def generateTableDict(import_filename):
         r = csv.reader(csv_file)
         for row in r:
             table_dict[row[1]] = row[2]
+            table_dict[row[1].lower()] = row[2]
     return table_dict
 
 

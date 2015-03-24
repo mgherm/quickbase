@@ -4,6 +4,7 @@
     <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../EmailLists/CETEmailListManager.py" afterPath="$PROJECT_DIR$/../EmailLists/CETEmailListManager.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/quickbase/__init__.py" afterPath="$PROJECT_DIR$/quickbase/__init__.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/setup.py" afterPath="$PROJECT_DIR$/setup.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="QB.iws" />
@@ -31,8 +32,8 @@
       <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/quickbase/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="2142" max-vertical-offset="6902">
-              <caret line="186" column="31" selection-start-line="186" selection-start-column="31" selection-end-line="187" selection-end-column="23" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="2499" max-vertical-offset="7259">
+              <caret line="155" column="36" selection-start-line="155" selection-start-column="36" selection-end-line="155" selection-end-column="36" />
               <folding>
                 <element signature="e#69#104#0" expanded="true" />
               </folding>
@@ -40,24 +41,14 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="CETEmailListManager.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="CETEmailListManager.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../EmailLists/CETEmailListManager.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="969" max-vertical-offset="13192">
-              <caret line="70" column="28" selection-start-line="70" selection-start-column="28" selection-end-line="70" selection-end-column="28" />
+            <state vertical-scroll-proportion="0.30210015" vertical-offset="2533" max-vertical-offset="13311">
+              <caret line="160" column="27" selection-start-line="160" selection-start-column="27" selection-end-line="160" selection-end-column="27" />
               <folding>
                 <element signature="e#239#259#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="EmailListManager.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../EmailLists/EmailListManager.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-2.2322035" vertical-offset="11483" max-vertical-offset="12920">
-              <caret line="605" column="20" selection-start-line="605" selection-start-column="20" selection-end-line="605" selection-end-column="20" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -66,7 +57,7 @@
         <entry file="file://$PROJECT_DIR$/setup.py">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="289">
-              <caret line="11" column="13" selection-start-line="11" selection-start-column="13" selection-end-line="11" selection-end-column="13" />
+              <caret line="11" column="21" selection-start-line="11" selection-start-column="21" selection-end-line="11" selection-end-column="21" />
               <folding />
             </state>
           </provider>
@@ -80,9 +71,10 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/setup.py" />
-        <option value="$PROJECT_DIR$/quickbase/__init__.py" />
         <option value="C:/Python34/Lib/site-packages/quickbase/__init__.py" />
+        <option value="$PROJECT_DIR$/../EmailLists/EmailListManager.py" />
+        <option value="$PROJECT_DIR$/quickbase/__init__.py" />
+        <option value="$PROJECT_DIR$/setup.py" />
         <option value="$PROJECT_DIR$/../EmailLists/CETEmailListManager.py" />
       </list>
     </option>
@@ -165,7 +157,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="FullScreen" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../CETRobot" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../MainOffice" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -454,18 +446,28 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../EmailLists/EmailListManager.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-4.009693" vertical-offset="2567" max-vertical-offset="13039">
+          <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="2" />
+          <folding>
+            <element signature="e#239#259#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/setup.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="187" max-vertical-offset="289">
-          <caret line="11" column="13" selection-start-line="11" selection-start-column="13" selection-end-line="11" selection-end-column="13" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="289">
+          <caret line="11" column="21" selection-start-line="11" selection-start-column="21" selection-end-line="11" selection-end-column="21" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/quickbase/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="2754" max-vertical-offset="6902">
-          <caret line="186" column="31" selection-start-line="186" selection-start-column="31" selection-end-line="187" selection-end-column="23" />
+        <state vertical-scroll-proportion="0.0" vertical-offset="2499" max-vertical-offset="7259">
+          <caret line="155" column="36" selection-start-line="155" selection-start-column="36" selection-end-line="155" selection-end-column="36" />
           <folding>
             <element signature="e#69#104#0" expanded="true" />
           </folding>
@@ -474,19 +476,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../EmailLists/CETEmailListManager.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="969" max-vertical-offset="13192">
-          <caret line="70" column="28" selection-start-line="70" selection-start-column="28" selection-end-line="70" selection-end-column="28" />
+        <state vertical-scroll-proportion="0.30210015" vertical-offset="2533" max-vertical-offset="13311">
+          <caret line="160" column="27" selection-start-line="160" selection-start-column="27" selection-end-line="160" selection-end-column="27" />
           <folding>
             <element signature="e#239#259#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../EmailLists/EmailListManager.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-2.2322035" vertical-offset="11483" max-vertical-offset="12920">
-          <caret line="605" column="20" selection-start-line="605" selection-start-column="20" selection-end-line="605" selection-end-column="20" />
-          <folding />
         </state>
       </provider>
     </entry>
