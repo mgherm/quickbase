@@ -45,7 +45,7 @@ class QuickbaseAction():
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records
         self.response = None
-
+        self.clist = clist
         if self.action_string == "query":
             if "query=" in query:
                 v, query = query.split("=", 1)
@@ -66,7 +66,7 @@ class QuickbaseAction():
                 <slist>%s</slist>
                 </qdbapi>
                 """ % (self.app.ticket, query, clist, slist)
-            self.request.data = data.encode('utf-8')
+            self.request.data = self.data.encode('utf-8')
         elif self.action_string == "add":
             assert type(data) == dict
             recordInfo = ""
@@ -150,6 +150,16 @@ class QuickbaseAction():
         content = urllib.request.urlopen(self.request).readall()
         self.raw_response = etree.fromstring(content).findall('record')
         self.response = QuickbaseResponse(self.raw_response)
+        self.fid_dict = dict()
+        fid_list = self.clist.split('.')
+        try:
+            field_list = list(self.raw_response[0])
+            counter = 0
+            for fid in fid_list:
+                self.fid_dict[fid] = field_list[counter].tag
+                counter += 1
+        except IndexError:
+            self.fid_dict = None
         if not self.return_records:
             return content
         else:
@@ -158,22 +168,22 @@ class QuickbaseAction():
 
 class QuickbaseResponse():
     def __init__(self, response):
-        if not response.find('record'):
-            self.records = response
-            self.values = []
-            for record in self.records:
-                record_dict = dict()
-                for item in record:
-                    record_dict[item.tag] = item.text
-                self.values.append(record_dict)
-        else:
-            self.records = response.findall('records')
-            self.values = []
-            for record in self.records:
-                record_dict = dict()
-                for item in record:
-                    record_dict[item.tag] = item.text
-                self.values.append(record_dict)
+
+        self.records = response
+        self.values = []
+        for record in self.records:
+            record_dict = dict()
+            for item in record:
+                record_dict[item.tag] = item.text
+            self.values.append(record_dict)
+        # else:
+        #     self.records = response.findall('records')
+        #     self.values = []
+        #     for record in self.records:
+        #         record_dict = dict()
+        #         for item in record:
+        #             record_dict[item.tag] = item.text
+        #         self.values.append(record_dict)
 
 
 class Eastern_tzinfo(datetime.tzinfo):
