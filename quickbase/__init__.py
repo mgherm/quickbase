@@ -24,7 +24,8 @@ class QuickbaseApp():
 
 
 class QuickbaseAction():
-    def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None, skip_first="0"):
+    def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
+                 skip_first="0"):
         """
 
         :param app: class QuickbaseApp
@@ -176,14 +177,6 @@ class QuickbaseResponse():
             for item in record:
                 record_dict[item.tag] = item.text
             self.values.append(record_dict)
-        # else:
-        #     self.records = response.findall('records')
-        #     self.values = []
-        #     for record in self.records:
-        #         record_dict = dict()
-        #         for item in record:
-        #             record_dict[item.tag] = item.text
-        #         self.values.append(record_dict)
 
 
 class Eastern_tzinfo(datetime.tzinfo):
@@ -292,7 +285,7 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
 
 def EpochToDate(epochTime):
     """
-    This function takes a Quickbase-generated time value (in milliseconds since the start of the epoch) and returns a datetime.date object
+    Takes a Quickbase-generated time value (ms since the start of the epoch) and returns a datetime.date object
     """
     if (epochTime):
         tupleTime = time.gmtime(int(epochTime) / 1000)
@@ -430,3 +423,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     request.data = data.encode('utf-8')
     response = urllib.request.urlopen(request).readall()
     return response
+
+def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
+    csv_file = file_name
+    urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket, csv_file)
