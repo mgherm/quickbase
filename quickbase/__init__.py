@@ -162,7 +162,7 @@ class QuickbaseAction():
         except IndexError:
             self.fid_dict = None
         if not self.return_records:
-            return content
+            return self.content
         else:
             return self.raw_response
 
