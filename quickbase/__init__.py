@@ -148,7 +148,7 @@ class QuickbaseAction():
 
         :return: response
         """
-        content = urllib.request.urlopen(self.request).readall()
+        self.content = urllib.request.urlopen(self.request).readall()
         self.raw_response = etree.fromstring(content).findall('record')
         self.response = QuickbaseResponse(self.raw_response)
         self.fid_dict = dict()
