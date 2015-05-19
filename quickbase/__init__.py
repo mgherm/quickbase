@@ -149,7 +149,7 @@ class QuickbaseAction():
         :return: response
         """
         self.content = urllib.request.urlopen(self.request).readall()
-        self.raw_response = etree.fromstring(content).findall('record')
+        self.raw_response = etree.fromstring(self.content).findall('record')
         self.response = QuickbaseResponse(self.raw_response)
         self.fid_dict = dict()
         fid_list = self.clist.split('.')
