@@ -183,7 +183,7 @@ class Eastern_tzinfo(datetime.tzinfo):
     """Implementation of the Eastern timezone."""
 
     def utcoffset(self, dt):
-        return datetime.timedelta(hours=-4) + self.dst(dt)
+        return datetime.timedelta(hours=-5) + self.dst(dt)
 
     def _FirstSunday(self, dt):
         """First Sunday on or after dt."""
@@ -205,6 +205,15 @@ class Eastern_tzinfo(datetime.tzinfo):
             return "EST"
         else:
             return "EDT"
+
+
+class UTC(datetime.tzinfo):
+    def utcoffset(self, dt):
+        return datetime.timedelta(hours=0)
+    def dst(self, dt):
+        return datetime.timedelta(hours=0)
+    def tzname(self, dt):
+        return "UTC"
 
 
 def generateTableDict(import_filename):
@@ -283,25 +292,44 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     return response
 
 
-def EpochToDate(epochTime):
+def EpochToDate(epochTime, include_time=False):
     """
     Takes a Quickbase-generated time value (ms since the start of the epoch) and returns a datetime.date object
     """
-    if (epochTime):
+
+    if epochTime and not include_time:
         tupleTime = time.gmtime(int(epochTime) / 1000)
         realDate = datetime.date(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday)
         return realDate
+    elif epochTime and include_time:
+        tupleTime = time.gmtime(int(epochTime) / 1000)
+        realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
+                                     tupleTime.tm_min, tupleTime.tm_sec, tzinfo=UTC())
+        realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
+        return realDateTime
     else:
         return None
 
 
-def DateToEpoch(regDate):
+def DateToEpoch(regDate, include_time=False):
     """
     takes a datetime object and returns an epoch time integer in a format that
     quickbase can use
     """
-    structTime = time.strptime(str(regDate.year) + str(regDate.month) + str(regDate.day), "%Y%m%d")
-    epochTime = int(time.mktime(structTime) * 1000)
+    date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=Eastern_tzinfo())
+    datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
+                                        regDate.second, tzinfo=Eastern_tzinfo())
+    if not include_time:
+        # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
+        #                            str(date_object.tzinfo),
+        #                            "%Y%m%d %Z")
+        epochTime = int(time.mktime(date_object.timetuple()) * 1000)
+    else:
+        # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
+        #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
+        #                            + str(date_object.second) + " " + str(date_object.tzinfo),
+        #                            "%Y%m%d %H:%M:%S %Z")
+        epochTime = int(time.mktime(datetime_object.timetuple()) * 1000)
     return (epochTime)
 
 
