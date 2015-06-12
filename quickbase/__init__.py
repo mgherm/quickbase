@@ -292,9 +292,10 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     return response
 
 
-def EpochToDate(epochTime, include_time=False):
+def EpochToDate(epochTime, include_time=False, convert_to_eastern_time=False):
     """
     Takes a Quickbase-generated time value (ms since the start of the epoch) and returns a datetime.date object
+    If pulling directly from Quickbase, should be converted to eastern time
     """
 
     if epochTime and not include_time:
@@ -304,29 +305,35 @@ def EpochToDate(epochTime, include_time=False):
     elif epochTime and include_time:
         tupleTime = time.gmtime(int(epochTime) / 1000)
         realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
-                                     tupleTime.tm_min, tupleTime.tm_sec, tzinfo=Eastern_tzinfo())
+                                     tupleTime.tm_min, tupleTime.tm_sec, tzinfo=UTC())
+        if convert_to_eastern_time:
+            realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
         # realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
         return realDateTime
     else:
         return None
 
 
-def DateToEpoch(regDate, include_time=False):
+def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
     """
     takes a datetime object and returns an epoch time integer in a format that
-    quickbase can use. Assumes time in localtime and does necessary alterations to make it work with UTC
+    quickbase can use. Assumes time in localtime and does necessary alterations to make it work with UTC if
+    convert_to_eastern_time is true
     """
-    date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=UTC())
-    datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
-                                        regDate.second, tzinfo=UTC())
+
     if not include_time:
-        utc_date_object = date_object.astimezone(tz=Eastern_tzinfo())
+        date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=UTC())
+        if convert_to_eastern_time:
+            utc_date_object = date_object.astimezone(tz=Eastern_tzinfo())
         # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
         #                            str(date_object.tzinfo),
         #                            "%Y%m%d %Z")
         epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
     else:
-        utc_datetime_object = datetime_object.astimezone(tz=Eastern_tzinfo())
+        datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
+                                        regDate.second, tzinfo=UTC())
+        if convert_to_eastern_time:
+            utc_datetime_object = datetime_object.astimezone(tz=Eastern_tzinfo())
         # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
         #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
         #                            + str(date_object.second) + " " + str(date_object.tzinfo),
