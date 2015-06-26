@@ -328,7 +328,9 @@ def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
         # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
         #                            str(date_object.tzinfo),
         #                            "%Y%m%d %Z")
-        epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
+            epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
+        else:
+            int(time.mktime(date_object.timetuple()) * 1000)
     else:
         datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
                                         regDate.second, tzinfo=UTC())
@@ -338,7 +340,8 @@ def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
         #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
         #                            + str(date_object.second) + " " + str(date_object.tzinfo),
         #                            "%Y%m%d %H:%M:%S %Z")
-        epochTime = int(time.mktime(utc_datetime_object.timetuple()) * 1000)
+            epochTime = int(time.mktime(utc_datetime_object.timetuple()) * 1000)
+        epochTime = int(time.mktime(datetime_object.timetuple()) * 1000)
     return (epochTime)
 
 
