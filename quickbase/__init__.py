@@ -330,7 +330,7 @@ def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
         #                            "%Y%m%d %Z")
             epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
         else:
-            int(time.mktime(date_object.timetuple()) * 1000)
+            epochTime = int(time.mktime(date_object.timetuple()) * 1000)
     else:
         datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
                                         regDate.second, tzinfo=UTC())
