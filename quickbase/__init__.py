@@ -226,7 +226,7 @@ def generateTableDict(import_filename):
     return table_dict
 
 
-def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords = False):
+def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     """
     This function takes the base Quickbase URL, an authentication ticket, a database ID (DBID), a query and a clist, and
     returns an XML file.
@@ -464,3 +464,47 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
 def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
     csv_file = file_name
     urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket, csv_file)
+
+def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
+    """Takes an input csv filename, sorts it, and writes to output_file
+    :param input_file: The file to be read from
+    :param output_file: The file to write to
+    :param sort_keys: A list of position indices to sort (from highest to lowest sort level)
+    :param contains_labels: Whether the first line is column labels
+    :return:
+    """
+    with open(input_file, 'r', newline='') as csv_input_file:
+        r=csv.reader(csv_input_file)
+        unsorted_lines = []
+        # if contains_labels:
+        #     file_labels = next(r)
+        # else:
+        #     file_labels = None
+        first_line = True
+        try:
+            for line in r:
+                if first_line and contains_labels:
+                    file_labels = line
+                    first_line = False
+                else:
+                    unsorted_lines.append(line)
+        except UnicodeDecodeError:
+            print(r.readall())
+        sorted_lines = unsorted_lines
+        sort_keys.reverse()
+        for sort_key in sort_keys:
+            try:
+                int(sorted_lines[0][sort_key])
+                sorted_lines = sorted(sorted_lines, key=lambda item: int(item[sort_key]))
+            except ValueError:
+                # print("sorting on string")
+                sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key].lower())
+            # else:
+            #     # print("not a string")
+            #     sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key])
+    with open(output_file, 'w', newline='') as csv_output_file:
+        w=csv.writer(csv_output_file)
+        if file_labels:
+            w.writerow(file_labels)
+        for line in sorted_lines:
+            w.writerow(line)
