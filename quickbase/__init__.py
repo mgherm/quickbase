@@ -8,7 +8,7 @@ import csv
 
 
 class QuickbaseApp():
-    def __init__(self, baseurl, ticket, tables, token=None):
+    def __init__(self, baseurl, ticket, tables, token=None, **kwargs):
         """Basic unit storing useful information for communicating with Quickbase
 
         :param baseurl: String, https://<domain>.quickbase.com/db/
@@ -21,6 +21,11 @@ class QuickbaseApp():
         self.ticket = ticket
         self.token = token
         self.tables = tables
+        if kwargs:
+            self.__dict__.update(kwargs)
+
+
+
 
 
 class QuickbaseAction():
@@ -34,13 +39,16 @@ class QuickbaseAction():
         :return:
         """
         self.app = app
-        self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
+        if dbid_key in self.app.tables:
+            self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
+        else:
+            self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower()
         if action.lower() == "query":
             self.action = "API_DoQuery"
         elif action.lower() == "add":
             self.action = "API_AddRecord"
-        elif action.lower() == "edit" or self.action.lower() == "csv":
+        elif action.lower() == "edit" or action.lower() == "csv":
             self.action = "API_ImportFromCSV"
         self.request.add_header("Content-Type", "application/xml")
         self.request.add_header("QUICKBASE-ACTION", self.action)
@@ -124,7 +132,7 @@ class QuickbaseAction():
                 for record_id in data:
                     assert type(record_id) == str and type(data[record_id]) == list
                     line = data[record_id]
-                    csv_lines += record_id
+                    csv_lines += record_id + ','
                     for item in line:
                         assert type(item) == str
                         csv_lines += item + ","
@@ -441,7 +449,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
         for record_id in csvData:
             assert type(record_id) == str and type(csvData[record_id]) == list
             line = csvData[record_id]
-            csv_lines += record_id
+            csv_lines += record_id + ','
             for item in line:
                 assert type(item) == str
                 csv_lines += item + ","
@@ -502,6 +510,10 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
             except ValueError:
                 # print("sorting on string")
                 sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key].lower())
+            except IndexError:
+                print(sorted_lines[0])
+                print(sort_key)
+                print(len(sorted_lines[0]))
             # else:
             #     # print("not a string")
             #     sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key])
