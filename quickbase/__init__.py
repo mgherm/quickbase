@@ -484,7 +484,7 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
     :param contains_labels: Whether the first line is column labels
     :return:
     """
-    with open(input_file, 'r', newline='') as csv_input_file:
+    with open(input_file, 'r', newline='', encoding='utf-8') as csv_input_file:
         r=csv.reader(csv_input_file)
         unsorted_lines = []
         # if contains_labels:
@@ -500,7 +500,7 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
                 else:
                     unsorted_lines.append(line)
         except UnicodeDecodeError:
-            print(r.readall())
+            print(r.read())
         sorted_lines = unsorted_lines
         sort_keys.reverse()
         for sort_key in sort_keys:
