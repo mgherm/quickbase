@@ -517,7 +517,7 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
             # else:
             #     # print("not a string")
             #     sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key])
-    with open(output_file, 'w', newline='') as csv_output_file:
+    with open(output_file, 'w', newline='', encoding='utf-8') as csv_output_file:
         w=csv.writer(csv_output_file)
         if file_labels:
             w.writerow(file_labels)
