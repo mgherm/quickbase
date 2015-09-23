@@ -156,7 +156,7 @@ class QuickbaseAction():
 
         :return: response
         """
-        self.content = urllib.request.urlopen(self.request).readall()
+        self.content = urllib.request.urlopen(self.request).read()
         self.raw_response = etree.fromstring(self.content).findall('record')
         self.response = QuickbaseResponse(self.raw_response)
         self.fid_dict = dict()
@@ -268,7 +268,7 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
 </qdbapi>
 """ % (ticket, request, clist, slist)
     query.data = data.encode('utf-8')
-    content = urllib.request.urlopen(query).readall()
+    content = urllib.request.urlopen(query).read()
     if not returnRecords:
         return content
     else:
@@ -469,7 +469,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     else:
         return None
     request.data = data.encode('utf-8')
-    response = urllib.request.urlopen(request).readall()
+    response = urllib.request.urlopen(request).read()
     return response
 
 def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
