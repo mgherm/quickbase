@@ -35,7 +35,7 @@ class QuickbaseAction():
 
         :param app: class QuickbaseApp
         :param dbid_key: dbid label
-        :param action: query, add, edit or csv
+        :param action: query, add, edit, qid or csv
         :return:
         """
         self.app = app
@@ -44,7 +44,7 @@ class QuickbaseAction():
         else:
             self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower()
-        if action.lower() == "query":
+        if action.lower() == "query" or action.lower()=='qid':
             self.action = "API_DoQuery"
         elif action.lower() == "add":
             self.action = "API_AddRecord"
@@ -54,43 +54,70 @@ class QuickbaseAction():
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records
         self.response = None
-        self.clist = clist
-        if self.action_string == "query":
-            if "query=" in query:
-                v, query = query.split("=", 1)
-            if slist == "0":
-                self.data = """
-                <qdbapi>
-                <ticket>%s</ticket>
-                <query>%s</query>
-                <clist>%s</clist>
-                </qdbapi>
-                """ % (self.app.ticket, query, clist)
+        self.slist = slist
+        self.data = data
+        if type(clist) == list:
+            clist_string = ""
+            for fid in clist:
+                clist_string += fid + "."
+            self.clist = clist_string[:-1]
+        else:
+            self.clist = clist
+        self.query = query
+        if self.action_string == "query" or self.action_string == "qid":
+            if self.query:
+                if "query=" in self.query or "qid=" in self.query:
+                    v, self.query = self.query.split("=", 1)
+                if self.slist == "0":
+                    self.data = """
+                    <qdbapi>
+                    <ticket>%s</ticket>
+                    <%s>%s</%s>
+                    <clist>%s</clist>
+                    </qdbapi>
+                    """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist)
+                else:
+                    self.data = """
+                    <qdbapi>
+                    <ticket>%s</ticket>
+                    <%s>%s</%s>
+                    <clist>%s</clist>
+                    <slist>%s</slist>
+                    </qdbapi>
+                    """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist, self.slist)
+                self.request.data = self.data.encode('utf-8')
             else:
-                self.data = """
-                <qdbapi>
-                <ticket>%s</ticket>
-                <query>%s</query>
-                <clist>%s</clist>
-                <slist>%s</slist>
-                </qdbapi>
-                """ % (self.app.ticket, query, clist, slist)
-            self.request.data = self.data.encode('utf-8')
+                if self.slist == "0":
+                    self.data = """
+                    <qdbapi>
+                    <ticket>%s</ticket>
+                    <clist>%s</clist>
+                    </qdbapi>
+                    """ % (self.app.ticket, self.clist)
+                else:
+                    self.data = """
+                    <qdbapi>
+                    <ticket>%s</ticket>
+                    <clist>%s</clist>
+                    <slist>%s</slist>
+                    </qdbapi>
+                    """ % (self.app.ticket, self.clist, self.slist)
+                self.request.data = self.data.encode('utf-8')
         elif self.action_string == "add":
-            assert type(data) == dict
+            assert type(self.data) == dict
             recordInfo = ""
-            for field in data:
-                recordInfo += '<field fid="' + str(field) + '">' + str(data[field]) + "</field>\n"
+            for field in self.data:
+                recordInfo += '<field fid="' + str(field) + '">' + str(self.data[field]) + "</field>\n"
             self.data = """
             <qdbapi>
             <ticket>%s</ticket>
             %s
             </qdbapi>
             """ % (self.app.ticket, recordInfo)
-            self.request.data = data.encode('utf-8')
+            self.request.data = self.data.encode('utf-8')
         elif self.action_string == "edit" or self.action_string == "csv":
-            if type(data) == str:
-                data = """
+            if type(self.data) == str:
+                self.data = """
                 <qdbapi>
                     <ticket>%s</ticket>
                     <records_csv>
@@ -101,21 +128,21 @@ class QuickbaseAction():
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
-                    """ % (self.app.ticket, data, clist, skip_first)
-            elif type(data) == list:
+                    """ % (self.app.ticket, self.data, self.clist, skip_first)
+            elif type(self.data) == list:
                 csv_lines = ""
-                if type(data[0]) == list:
-                    for line in data:
+                if type(self.data[0]) == list:
+                    for line in self.data:
                         for item in line:
                             assert type(item) == str
                             csv_lines += item + ","
                         csv_lines = csv_lines[:-1] + "\n"
-                elif type(data[0]) == str:
-                    for item in data:
+                elif type(self.data[0]) == str:
+                    for item in self.data:
                         assert item == str
                         csv_lines += item + ","
                     csv_lines = csv_lines[:-1] + "\n"
-                data = """
+                self.data = """
                 <qdbapi>
                     <ticket>%s</ticket>
                     <records_csv>
@@ -126,18 +153,18 @@ class QuickbaseAction():
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
-                    """ % (self.app.ticket, csv_lines, clist, skip_first)
-            elif type(data) == dict:
+                    """ % (self.app.ticket, csv_lines, self.clist, skip_first)
+            elif type(self.data) == dict:
                 csv_lines = ""
-                for record_id in data:
-                    assert type(record_id) == str and type(data[record_id]) == list
-                    line = data[record_id]
+                for record_id in self.data:
+                    assert type(record_id) == str and type(self.data[record_id]) == list
+                    line = self.data[record_id]
                     csv_lines += record_id + ','
                     for item in line:
                         assert type(item) == str
                         csv_lines += item + ","
                     csv_lines = csv_lines[:-1] + "\n"
-                data = """
+                self.data = """
                 <qdbapi>
                     <ticket>%s</ticket>
                     <records_csv>
@@ -148,7 +175,7 @@ class QuickbaseAction():
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
-                    """ % (self.app.ticket, csv_lines, clist, "0")
+                    """ % (self.app.ticket, csv_lines, self.clist, "0")
             self.request.data = data.encode('utf-8')
 
     def performAction(self):
@@ -476,15 +503,16 @@ def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
     csv_file = file_name
     urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket, csv_file)
 
-def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
+def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, format='utf-8'):
     """Takes an input csv filename, sorts it, and writes to output_file
     :param input_file: The file to be read from
     :param output_file: The file to write to
     :param sort_keys: A list of position indices to sort (from highest to lowest sort level)
     :param contains_labels: Whether the first line is column labels
+    :param format: blank for utf-8, otherwise a string containing the formatting
     :return:
     """
-    with open(input_file, 'r', newline='', encoding='utf-8') as csv_input_file:
+    with open(input_file, 'r', newline='', encoding=format) as csv_input_file:
         r=csv.reader(csv_input_file)
         unsorted_lines = []
         # if contains_labels:
@@ -492,15 +520,18 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False):
         # else:
         #     file_labels = None
         first_line = True
-        try:
-            for line in r:
-                if first_line and contains_labels:
-                    file_labels = line
-                    first_line = False
-                else:
+
+        for line in r:
+            if first_line and contains_labels:
+                file_labels = line
+                first_line = False
+            else:
+                try:
                     unsorted_lines.append(line)
-        except UnicodeDecodeError:
-            print(r.read())
+                except UnicodeDecodeError as err:
+                    print(err)
+                    print(line)
+                    print(r)
         sorted_lines = unsorted_lines
         sort_keys.reverse()
         for sort_key in sort_keys:
