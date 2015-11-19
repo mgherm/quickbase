@@ -554,3 +554,10 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
             w.writerow(file_labels)
         for line in sorted_lines:
             w.writerow(line)
+
+
+def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/up/'):
+    request = urllib.request.Request(baseurl+dbid+'/a/r'+rid+'/e'+fid+'/v'+vid+'?ticket='+ticket)
+    response = urllib.request.urlopen(request).read()
+    with open(filename, 'wb') as downloaded_file:
+        downloaded_file.write(response)
