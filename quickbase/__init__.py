@@ -130,8 +130,10 @@ class QuickbaseAction():
                 </qdbapi>
                     """ % (self.app.ticket, self.data, self.clist, skip_first)
             elif type(self.data) == list:
+                # print('list found')
                 csv_lines = ""
                 if type(self.data[0]) == list:
+                    # print('2nd list found')
                     for line in self.data:
                         for item in line:
                             assert type(item) == str
@@ -176,7 +178,7 @@ class QuickbaseAction():
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
                     """ % (self.app.ticket, csv_lines, self.clist, "0")
-            self.request.data = data.encode('utf-8')
+            self.request.data = self.data.encode('utf-8')
 
     def performAction(self):
         """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
@@ -184,22 +186,33 @@ class QuickbaseAction():
         :return: response
         """
         self.content = urllib.request.urlopen(self.request).read()
-        self.raw_response = etree.fromstring(self.content).findall('record')
-        self.response = QuickbaseResponse(self.raw_response)
-        self.fid_dict = dict()
-        fid_list = self.clist.split('.')
-        try:
-            field_list = list(self.raw_response[0])
-            counter = 0
-            for fid in fid_list:
-                self.fid_dict[fid] = field_list[counter].tag
-                counter += 1
-        except IndexError:
-            self.fid_dict = None
-        if not self.return_records:
-            return self.content
-        else:
-            return self.raw_response
+        if not self.action_string == 'csv':
+            self.raw_response = etree.fromstring(self.content).findall('record')
+            self.response = QuickbaseResponse(self.raw_response)
+            self.fid_dict = dict()
+            fid_list = self.clist.split('.')
+            try:
+                field_list = list(self.raw_response[0])
+                counter = 0
+                for fid in fid_list:
+                    self.fid_dict[fid] = field_list[counter].tag
+                    counter += 1
+            except IndexError:
+                self.fid_dict = None
+            if not self.return_records:
+                return self.content
+            else:
+                return self.raw_response
+        if self.action_string == 'csv':
+            print(self.content)
+            self.num_recs_input = etree.fromstring(self.content).find('num_recs_input').text
+            self.num_recs_added = etree.fromstring(self.content).find('num_recs_added').text
+            self.num_recs_updated = etree.fromstring(self.content).find('num_recs_updated').text
+            self.rid_list = list()
+            for rid in etree.fromstring(self.content).findall('rid'):
+                self.rid_list.append(rid.text)
+            return self.rid_list
+
 
 
 class QuickbaseResponse():
@@ -556,8 +569,8 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
             w.writerow(line)
 
 
-def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/up/'):
-    request = urllib.request.Request(baseurl+dbid+'/a/r'+rid+'/e'+fid+'/v'+vid+'?ticket='+ticket)
+def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/'):
+    request = urllib.request.Request(baseurl+'up/'+dbid+'/a/r'+rid+'/e'+fid+'/v'+vid+'?ticket='+ticket)
     response = urllib.request.urlopen(request).read()
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)
