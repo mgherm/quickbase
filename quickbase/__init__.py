@@ -44,7 +44,7 @@ class QuickbaseAction():
         else:
             self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower()
-        if action.lower() == "query" or action.lower()=='qid':
+        if action.lower() == "query" or action.lower() == 'qid':
             self.action = "API_DoQuery"
         elif action.lower() == "add":
             self.action = "API_AddRecord"
@@ -117,6 +117,13 @@ class QuickbaseAction():
             self.request.data = self.data.encode('utf-8')
         elif self.action_string == "edit" or self.action_string == "csv":
             if type(self.data) == str:
+                if '"' in self.data:
+                    self.data = self.data.replace('"','""')
+                    self.data = '"' + self.data + '"'
+                # if "'" in item:
+                #     item.replace("'", "''")
+                elif "," in self.data:
+                    self.data = '"' + self.data + '"'
                 self.data = """
                 <qdbapi>
                     <ticket>%s</ticket>
@@ -137,11 +144,34 @@ class QuickbaseAction():
                     for line in self.data:
                         for item in line:
                             assert type(item) == str
+                            if '"' in item:
+                                item = item.replace('"','""')
+                                item = '"' + item + '"'
+                            # if "'" in item:
+                            #     item.replace("'", "''")
+                            elif "," in item:
+                                item = '"' + item + '"'
                             csv_lines += item + ","
                         csv_lines = csv_lines[:-1] + "\n"
                 elif type(self.data[0]) == str:
                     for item in self.data:
-                        assert item == str
+                        try:
+                            assert type(item) == str
+                        except AssertionError:
+                            print("wrong item type")
+                            print(type(item))
+                            print(item)
+                            # print(data)
+                        # if item == None:
+                        #     item = ""
+                        if '"' in item:
+                            item = item.replace('"','""')
+                            item = '"' + item + '"'
+                        # if "'" in item:
+                        #     item.replace("'", "\'")
+                        elif "," in item:
+                            item = '"' + item + '"'
+                            # print(item)
                         csv_lines += item + ","
                     csv_lines = csv_lines[:-1] + "\n"
                 self.data = """
@@ -164,6 +194,13 @@ class QuickbaseAction():
                     csv_lines += record_id + ','
                     for item in line:
                         assert type(item) == str
+                        if '"' in item:
+                            item = item.replace('"','""')
+                            item  = '"' + item + '"'
+                        # if "'" in item:
+                        #     item.replace("'", "\'")
+                        elif "," in item:
+                            item = '"' + item + '"'
                         csv_lines += item + ","
                     csv_lines = csv_lines[:-1] + "\n"
                 self.data = """
@@ -186,32 +223,61 @@ class QuickbaseAction():
         :return: response
         """
         self.content = urllib.request.urlopen(self.request).read()
+        self.etree_content = etree.fromstring(self.content)
         if not self.action_string == 'csv':
             self.raw_response = etree.fromstring(self.content).findall('record')
             self.response = QuickbaseResponse(self.raw_response)
             self.fid_dict = dict()
-            fid_list = self.clist.split('.')
-            try:
-                field_list = list(self.raw_response[0])
-                counter = 0
-                for fid in fid_list:
-                    self.fid_dict[fid] = field_list[counter].tag
-                    counter += 1
-            except IndexError:
-                self.fid_dict = None
-            if not self.return_records:
-                return self.content
+            if not self.action_string == "add":
+                fid_list = self.clist.split('.')
+                try:
+                    field_list = list(self.raw_response[0])
+                    counter = 0
+                    for fid in fid_list:
+                        self.fid_dict[fid] = field_list[counter].tag
+                        counter += 1
+                except IndexError:
+                    self.fid_dict = None
+                if not self.return_records:
+                    return self.content
+                else:
+                    return self.raw_response
             else:
-                return self.raw_response
+                response_dict =  {'errcode':self.etree_content.find('errcode').text,
+                        'errtext':self.etree_content.find('errtext').text}
+                if self.etree_content.find('rid')is not None:
+                        response_dict['rid'] = self.etree_content.find('rid').text
+                else:
+                    response_dict['rid'] = None
+                if self.etree_content.find('errdetail') is not None:
+                    response_dict['errdetail'] = self.etree_content.find('errdetail').text
+                else:
+                    response_dict['errdetail'] = None
+                return response_dict
         if self.action_string == 'csv':
-            print(self.content)
-            self.num_recs_input = etree.fromstring(self.content).find('num_recs_input').text
-            self.num_recs_added = etree.fromstring(self.content).find('num_recs_added').text
-            self.num_recs_updated = etree.fromstring(self.content).find('num_recs_updated').text
+            # print(self.content)
+            resp = etree.fromstring(self.content)
+            if resp.find('num_recs_input') is not None:
+                self.num_recs_input = resp.find('num_recs_input').text
+            else:
+                self.num_recs_input = "0"
+            if resp.find('num_recs_added') is not None:
+                self.num_recs_added = resp.find('num_recs_added').text
+            else:
+                self.num_recs_added = "0"
+            if resp.find('num_recs_updated') is not None:
+                self.num_recs_updated = resp.find('num_recs_updated').text
+            else:
+                self.num_recs_updated = "0"
             self.rid_list = list()
-            for rid in etree.fromstring(self.content).findall('rid'):
-                self.rid_list.append(rid.text)
-            return self.rid_list
+            rids = etree.fromstring(self.content).find('rids')
+            try:
+                for rid in rids.findall('rid'):
+                    self.rid_list.append(rid.text)
+                return self.rid_list
+            except AttributeError as err:
+                print(err)
+                print(self.content)
 
 
 
