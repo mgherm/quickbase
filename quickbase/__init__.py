@@ -1,5 +1,5 @@
 __author__ = 'Herman'
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 import urllib.request, urllib.parse
 import datetime, time
@@ -25,12 +25,9 @@ class QuickbaseApp():
             self.__dict__.update(kwargs)
 
 
-
-
-
 class QuickbaseAction():
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0"):
+                 skip_first="0", time_in_utc=False):
         """
 
         :param app: class QuickbaseApp
@@ -38,6 +35,10 @@ class QuickbaseAction():
         :param action: query, add, edit, qid or csv
         :return:
         """
+        if time_in_utc:
+            send_time_in_utc = "1"
+        else:
+            send_time_in_utc = "0"
         self.app = app
         if dbid_key in self.app.tables:
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
@@ -70,38 +71,39 @@ class QuickbaseAction():
                     v, self.query = self.query.split("=", 1)
                 if self.slist == "0":
                     self.data = """
-                    <qdbapi>
-                    <ticket>%s</ticket>
-                    <%s>%s</%s>
-                    <clist>%s</clist>
-                    </qdbapi>
-                    """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist)
+                        <qdbapi>
+                            <ticket>%s</ticket>
+                            <%s>%s</%s>
+                            <clist>%s</clist>
+                        </qdbapi>
+                        """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist)
                 else:
                     self.data = """
-                    <qdbapi>
-                    <ticket>%s</ticket>
-                    <%s>%s</%s>
-                    <clist>%s</clist>
-                    <slist>%s</slist>
-                    </qdbapi>
-                    """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist, self.slist)
+                        <qdbapi>
+                            <ticket>%s</ticket>
+                            <%s>%s</%s>
+                            <clist>%s</clist>
+                            <slist>%s</slist>
+                        </qdbapi>
+                        """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist,
+                        self.slist)
                 self.request.data = self.data.encode('utf-8')
             else:
                 if self.slist == "0":
                     self.data = """
-                    <qdbapi>
-                    <ticket>%s</ticket>
-                    <clist>%s</clist>
-                    </qdbapi>
-                    """ % (self.app.ticket, self.clist)
+                        <qdbapi>
+                            <ticket>%s</ticket>
+                            <clist>%s</clist>
+                        </qdbapi>
+                        """ % (self.app.ticket, self.clist)
                 else:
                     self.data = """
-                    <qdbapi>
-                    <ticket>%s</ticket>
-                    <clist>%s</clist>
-                    <slist>%s</slist>
-                    </qdbapi>
-                    """ % (self.app.ticket, self.clist, self.slist)
+                        <qdbapi>
+                            <ticket>%s</ticket>
+                            <clist>%s</clist>
+                            <slist>%s</slist>
+                        </qdbapi>
+                        """ % (self.app.ticket, self.clist, self.slist)
                 self.request.data = self.data.encode('utf-8')
         elif self.action_string == "add":
             assert type(self.data) == dict
@@ -109,16 +111,17 @@ class QuickbaseAction():
             for field in self.data:
                 recordInfo += '<field fid="' + str(field) + '">' + str(self.data[field]) + "</field>\n"
             self.data = """
-            <qdbapi>
-            <ticket>%s</ticket>
-            %s
-            </qdbapi>
-            """ % (self.app.ticket, recordInfo)
+                <qdbapi>
+                    <msInUTC>%s</msInUTC>
+                    <ticket>%s</ticket>
+                    %s
+                </qdbapi>
+                """ % (send_time_in_utc, self.app.ticket, recordInfo)
             self.request.data = self.data.encode('utf-8')
         elif self.action_string == "edit" or self.action_string == "csv":
             if type(self.data) == str:
                 if '"' in self.data:
-                    self.data = self.data.replace('"','""')
+                    self.data = self.data.replace('"', '""')
                     self.data = '"' + self.data + '"'
                 # if "'" in item:
                 #     item.replace("'", "''")
@@ -126,6 +129,7 @@ class QuickbaseAction():
                     self.data = '"' + self.data + '"'
                 self.data = """
                 <qdbapi>
+                    <msInUTC>%s</msInUTC>
                     <ticket>%s</ticket>
                     <records_csv>
                         <![CDATA[
@@ -135,7 +139,7 @@ class QuickbaseAction():
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
-                    """ % (self.app.ticket, self.data, self.clist, skip_first)
+                    """ % (send_time_in_utc, self.app.ticket, self.data, self.clist, skip_first)
             elif type(self.data) == list:
                 # print('list found')
                 csv_lines = ""
@@ -145,7 +149,7 @@ class QuickbaseAction():
                         for item in line:
                             assert type(item) == str
                             if '"' in item:
-                                item = item.replace('"','""')
+                                item = item.replace('"', '""')
                                 item = '"' + item + '"'
                             # if "'" in item:
                             #     item.replace("'", "''")
@@ -165,7 +169,7 @@ class QuickbaseAction():
                         # if item == None:
                         #     item = ""
                         if '"' in item:
-                            item = item.replace('"','""')
+                            item = item.replace('"', '""')
                             item = '"' + item + '"'
                         # if "'" in item:
                         #     item.replace("'", "\'")
@@ -176,6 +180,7 @@ class QuickbaseAction():
                     csv_lines = csv_lines[:-1] + "\n"
                 self.data = """
                 <qdbapi>
+                    <msInUTC>%s</msInUTC>
                     <ticket>%s</ticket>
                     <records_csv>
                         <![CDATA[
@@ -185,7 +190,7 @@ class QuickbaseAction():
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
-                    """ % (self.app.ticket, csv_lines, self.clist, skip_first)
+                    """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, skip_first)
             elif type(self.data) == dict:
                 csv_lines = ""
                 for record_id in self.data:
@@ -195,8 +200,8 @@ class QuickbaseAction():
                     for item in line:
                         assert type(item) == str
                         if '"' in item:
-                            item = item.replace('"','""')
-                            item  = '"' + item + '"'
+                            item = item.replace('"', '""')
+                            item = '"' + item + '"'
                         # if "'" in item:
                         #     item.replace("'", "\'")
                         elif "," in item:
@@ -205,6 +210,7 @@ class QuickbaseAction():
                     csv_lines = csv_lines[:-1] + "\n"
                 self.data = """
                 <qdbapi>
+                    <msInUTC>%s</msInUTC>
                     <ticket>%s</ticket>
                     <records_csv>
                         <![CDATA[
@@ -214,7 +220,7 @@ class QuickbaseAction():
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
                 </qdbapi>
-                    """ % (self.app.ticket, csv_lines, self.clist, "0")
+                    """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, "0")
             self.request.data = self.data.encode('utf-8')
 
     def performAction(self):
@@ -243,10 +249,10 @@ class QuickbaseAction():
                 else:
                     return self.raw_response
             else:
-                response_dict =  {'errcode':self.etree_content.find('errcode').text,
-                        'errtext':self.etree_content.find('errtext').text}
-                if self.etree_content.find('rid')is not None:
-                        response_dict['rid'] = self.etree_content.find('rid').text
+                response_dict = {'errcode': self.etree_content.find('errcode').text,
+                                 'errtext': self.etree_content.find('errtext').text}
+                if self.etree_content.find('rid') is not None:
+                    response_dict['rid'] = self.etree_content.find('rid').text
                 else:
                     response_dict['rid'] = None
                 if self.etree_content.find('errdetail') is not None:
@@ -278,7 +284,6 @@ class QuickbaseAction():
             except AttributeError as err:
                 print(err)
                 print(self.content)
-
 
 
 class QuickbaseResponse():
@@ -324,8 +329,10 @@ class Eastern_tzinfo(datetime.tzinfo):
 class UTC(datetime.tzinfo):
     def utcoffset(self, dt):
         return datetime.timedelta(hours=0)
+
     def dst(self, dt):
         return datetime.timedelta(hours=0)
+
     def tzname(self, dt):
         return "UTC"
 
@@ -358,28 +365,29 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
         v, request = request.split("=", 1)
     if slist == "0":
         data = """
-<qdbapi>
-<ticket>%s</ticket>
-<query>%s</query>
-<clist>%s</clist>
-</qdbapi>
-""" % (ticket, request, clist)
+            <qdbapi>
+                <msInUTC>%s</msInUTC>
+                <ticket>%s</ticket>
+                <query>%s</query>
+                <clist>%s</clist>
+            </qdbapi>
+        """ % ('0', ticket, request, clist)
     else:
         data = """
-<qdbapi>
-<ticket>%s</ticket>
-<query>%s</query>
-<clist>%s</clist>
-<slist>%s</slist>
-</qdbapi>
-""" % (ticket, request, clist, slist)
+            <qdbapi>
+                <msInUTC>%s</msInUTC>
+                <ticket>%s</ticket>
+                <query>%s</query>
+                <clist>%s</clist>
+                <slist>%s</slist>
+            </qdbapi>
+        """ % ('0', ticket, request, clist, slist)
     query.data = data.encode('utf-8')
     content = urllib.request.urlopen(query).read()
     if not returnRecords:
         return content
     else:
         return etree.fromstring(content).findall('record')
-
 
 
 def QBAdd(url, ticket, dbid, fieldValuePairs):
@@ -395,11 +403,12 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     for field in fieldValuePairs:
         recordInfo += '<field fid="' + str(field) + '">' + str(fieldValuePairs[field]) + "</field>\n"
     data = """
-<qdbapi>
-<ticket>%s</ticket>
-%s
-</qdbapi>
-""" % (ticket, recordInfo)
+        <qdbapi>
+            <msInUTC>%s</msInUTC>
+            <ticket>%s</ticket>
+            %s
+        </qdbapi>
+    """ % ('0', ticket, recordInfo)
 
     query.data = data.encode('utf-8')
     response = urllib.request.urlopen(query)
@@ -419,7 +428,7 @@ def EpochToDate(epochTime, include_time=False, convert_to_eastern_time=False):
     elif epochTime and include_time:
         tupleTime = time.gmtime(int(epochTime) / 1000)
         realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
-                                     tupleTime.tm_min, tupleTime.tm_sec, tzinfo=UTC())
+                                         tupleTime.tm_min, tupleTime.tm_sec, tzinfo=UTC())
         if convert_to_eastern_time:
             realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
         # realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
@@ -439,21 +448,21 @@ def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
         date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=UTC())
         if convert_to_eastern_time:
             utc_date_object = date_object.astimezone(tz=Eastern_tzinfo())
-        # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
-        #                            str(date_object.tzinfo),
-        #                            "%Y%m%d %Z")
+            # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
+            #                            str(date_object.tzinfo),
+            #                            "%Y%m%d %Z")
             epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
         else:
             epochTime = int(time.mktime(date_object.timetuple()) * 1000)
     else:
         datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
-                                        regDate.second, tzinfo=UTC())
+                                            regDate.second, tzinfo=UTC())
         if convert_to_eastern_time:
             utc_datetime_object = datetime_object.astimezone(tz=Eastern_tzinfo())
-        # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
-        #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
-        #                            + str(date_object.second) + " " + str(date_object.tzinfo),
-        #                            "%Y%m%d %H:%M:%S %Z")
+            # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
+            #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
+            #                            + str(date_object.second) + " " + str(date_object.tzinfo),
+            #                            "%Y%m%d %H:%M:%S %Z")
             epochTime = int(time.mktime(utc_datetime_object.timetuple()) * 1000)
         epochTime = int(time.mktime(datetime_object.timetuple()) * 1000)
     return (epochTime)
@@ -484,15 +493,17 @@ def QBEdit(url, ticket, dbid, rid, field, value):
     query.add_header("Content-Type", "application/xml")
     query.add_header("QUICKBASE-ACTION", "API_EditRecord")
     data = """
-<qdbapi>
-<ticket>%s</ticket>
-<rid>%s</rid>
-<field fid="%s">%s</field>
-</qdbapi>
-""" % (ticket, rid, field, value)
+        <qdbapi>
+            <msInUTC>%s</msInUTC>
+            <ticket>%s</ticket>
+            <rid>%s</rid>
+            <field fid="%s">%s</field>
+        </qdbapi>
+    """ % ('0', ticket, rid, field, value)
     query.data = data.encode('utf-8')
     response = urllib.request.urlopen(query)
     return response
+
 
 def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     """ Given a csv-formatted string, list, or dict, upload records to Quickbase
@@ -509,12 +520,13 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     :return: response contains troubleshooting information including error code and value, count of records added,
     and count of records edited.
     """
-    request = urllib.request.Request(url+dbid)
+    request = urllib.request.Request(url + dbid)
     request.add_header("Content-Type", "application/xml")
     request.add_header("QUICKBASE-ACTION", "API_ImportFromCSV")
     if type(csvData) == str:
         data = """
         <qdbapi>
+            <msInUTC>%s</msInUTC>
             <ticket>%s</ticket>
             <records_csv>
                 <![CDATA[
@@ -524,7 +536,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
             <clist>%s</clist>
             <skipfirst>%s</skipfirst>
         </qdbapi>
-            """ % (ticket, csvData, clist, skipFirst)
+            """ % ('0', ticket, csvData, clist, skipFirst)
     elif type(csvData) == list:
         csv_lines = ""
         if type(csvData[0]) == list:
@@ -540,6 +552,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
             csv_lines = csv_lines[:-1] + "\n"
         data = """
         <qdbapi>
+            <msInUTC>%s</msInUTC>
             <ticket>%s</ticket>
             <records_csv>
                 <![CDATA[
@@ -549,7 +562,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
             <clist>%s</clist>
             <skipfirst>%s</skipfirst>
         </qdbapi>
-            """ % (ticket, csv_lines, clist, skipFirst)
+            """ % ('0', ticket, csv_lines, clist, skipFirst)
     elif type(csvData) == dict:
         csv_lines = ""
         for record_id in csvData:
@@ -562,6 +575,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
             csv_lines = csv_lines[:-1] + "\n"
         data = """
         <qdbapi>
+            <msInUTC>%s</msInUTC>
             <ticket>%s</ticket>
             <records_csv>
                 <![CDATA[
@@ -571,16 +585,19 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
             <clist>%s</clist>
             <skipfirst>%s</skipfirst>
         </qdbapi>
-            """ % (ticket, csv_lines, clist, "0")
+            """ % ('0', ticket, csv_lines, clist, "0")
     else:
         return None
     request.data = data.encode('utf-8')
     response = urllib.request.urlopen(request).read()
     return response
 
+
 def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
     csv_file = file_name
-    urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket, csv_file)
+    urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket,
+                               csv_file)
+
 
 def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, format='utf-8'):
     """Takes an input csv filename, sorts it, and writes to output_file
@@ -592,7 +609,7 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
     :return:
     """
     with open(input_file, 'r', newline='', encoding=format) as csv_input_file:
-        r=csv.reader(csv_input_file)
+        r = csv.reader(csv_input_file)
         unsorted_lines = []
         # if contains_labels:
         #     file_labels = next(r)
@@ -624,11 +641,11 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
                 print(sorted_lines[0])
                 print(sort_key)
                 print(len(sorted_lines[0]))
-            # else:
-            #     # print("not a string")
-            #     sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key])
+                # else:
+                #     # print("not a string")
+                #     sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key])
     with open(output_file, 'w', newline='', encoding='utf-8') as csv_output_file:
-        w=csv.writer(csv_output_file)
+        w = csv.writer(csv_output_file)
         if file_labels:
             w.writerow(file_labels)
         for line in sorted_lines:
@@ -636,7 +653,8 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
 
 
 def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/'):
-    request = urllib.request.Request(baseurl+'up/'+dbid+'/a/r'+rid+'/e'+fid+'/v'+vid+'?ticket='+ticket)
+    request = urllib.request.Request(
+        baseurl + 'up/' + dbid + '/a/r' + rid + '/e' + fid + '/v' + vid + '?ticket=' + ticket)
     response = urllib.request.urlopen(request).read()
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)

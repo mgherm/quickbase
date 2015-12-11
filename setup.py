@@ -3,7 +3,7 @@ __author__ = 'mike'
 from setuptools import setup
 
 setup(name='quickbase',
-      version='0.99998',
+      version='0.999990',
       description='quickbase api tools',
       url="https://github.com/cictr/quickbase",
       author='Mike Herman',
