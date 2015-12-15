@@ -27,7 +27,7 @@ class QuickbaseApp():
 
 class QuickbaseAction():
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0", time_in_utc=False):
+                 skip_first="0", time_in_utc=False, confirmation=False):
         """
 
         :param app: class QuickbaseApp
@@ -51,6 +51,8 @@ class QuickbaseAction():
             self.action = "API_AddRecord"
         elif action.lower() == "edit" or action.lower() == "csv":
             self.action = "API_ImportFromCSV"
+        elif action.lower() == "purge":
+            self.action = "API_PurgeRecords"
         self.request.add_header("Content-Type", "application/xml")
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records
@@ -104,6 +106,27 @@ class QuickbaseAction():
                             <slist>%s</slist>
                         </qdbapi>
                         """ % (self.app.ticket, self.clist, self.slist)
+                self.request.data = self.data.encode('utf-8')
+        elif self.action_string == "purge":
+            if not confirmation:
+                return "Purge requires confirmation."
+            if not self.query:
+                return "Purging without a query will delete all records, and is disabled."  # use qid=1 instead
+            if confirmation and self.query:
+                if "query=" in self.query:
+                    v, self.query = self.query.split("=", 1)
+                    query_type = "query"
+                elif "qid=" in self.query:
+                    v, self.query = self.query.split("=", 1)
+                    query_type = "qid"
+                else:
+                    query_type = "query"
+                self.data = """
+                    <qdbapi>
+                        <ticket>%s</ticket>
+                        <%s>%s</%s>
+                    </qdbapi>
+                    """ % (self.app.ticket, query_type, self.query, query_type)
                 self.request.data = self.data.encode('utf-8')
         elif self.action_string == "add":
             assert type(self.data) == dict
@@ -234,7 +257,7 @@ class QuickbaseAction():
             self.raw_response = etree.fromstring(self.content).findall('record')
             self.response = QuickbaseResponse(self.raw_response)
             self.fid_dict = dict()
-            if not self.action_string == "add":
+            if not self.action_string == "add" and not self.action_string == "purge":
                 fid_list = self.clist.split('.')
                 try:
                     field_list = list(self.raw_response[0])
