@@ -622,7 +622,7 @@ def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
                                csv_file)
 
 
-def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, format='utf-8'):
+def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, format='utf-8', quotechar=None, delimiter=None):
     """Takes an input csv filename, sorts it, and writes to output_file
     :param input_file: The file to be read from
     :param output_file: The file to write to
@@ -631,8 +631,12 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
     :param format: blank for utf-8, otherwise a string containing the formatting
     :return:
     """
+    if delimiter is None:
+        delimiter = ","
+    if quotechar is None:
+        quotechar = '"'
     with open(input_file, 'r', newline='', encoding=format) as csv_input_file:
-        r = csv.reader(csv_input_file)
+        r = csv.reader(csv_input_file, quotechar=quotechar, delimiter=delimiter)
         unsorted_lines = []
         # if contains_labels:
         #     file_labels = next(r)
@@ -668,12 +672,11 @@ def csvSort(input_file, output_file, sort_keys=[0], contains_labels=False, forma
                 #     # print("not a string")
                 #     sorted_lines = sorted(sorted_lines, key=lambda item: item[sort_key])
     with open(output_file, 'w', newline='', encoding='utf-8') as csv_output_file:
-        w = csv.writer(csv_output_file)
+        w = csv.writer(csv_output_file, quotechar=quotechar, delimiter=delimiter)
         if file_labels:
             w.writerow(file_labels)
         for line in sorted_lines:
             w.writerow(line)
-
 
 def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/'):
     request = urllib.request.Request(
