@@ -27,7 +27,7 @@ class QuickbaseApp():
 
 class QuickbaseAction():
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0", time_in_utc=False, confirmation=False):
+                 skip_first="0", time_in_utc=False, confirmation=False, options=None):
         """
 
         :param app: class QuickbaseApp
@@ -45,7 +45,7 @@ class QuickbaseAction():
         else:
             self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower()
-        if action.lower() == "query" or action.lower() == 'qid':
+        if action.lower() == "query" or action.lower() == 'qid' or action.lower() == 'qname':
             self.action = "API_DoQuery"
         elif action.lower() == "add":
             self.action = "API_AddRecord"
@@ -67,46 +67,52 @@ class QuickbaseAction():
         else:
             self.clist = clist
         self.query = query
-        if self.action_string == "query" or self.action_string == "qid":
+        if self.action_string == "query" or self.action_string == "qid" or self.action_string == 'qname':
             if self.query:
-                if "query=" in self.query or "qid=" in self.query:
+                if "query=" in self.query or "qid=" in self.query or "qname=" in self.query:
                     v, self.query = self.query.split("=", 1)
                 if self.slist == "0":
                     self.data = """
                         <qdbapi>
                             <ticket>%s</ticket>
                             <%s>%s</%s>
-                            <clist>%s</clist>
-                        </qdbapi>
-                        """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist)
+                            """ % (self.app.ticket, self.action_string, self.query, self.action_string)
+                    if clist:
+                        self.data = self.data + """<clist>%s</clist>
+                        """ % (self.clist)
+
                 else:
                     self.data = """
                         <qdbapi>
                             <ticket>%s</ticket>
                             <%s>%s</%s>
-                            <clist>%s</clist>
-                            <slist>%s</slist>
-                        </qdbapi>
-                        """ % (self.app.ticket, self.action_string, self.query, self.action_string, self.clist,
-                        self.slist)
-                self.request.data = self.data.encode('utf-8')
+                            """% (self.app.ticket, self.action_string, self.query, self.action_string)
+                    if clist:
+                        self.data = self.data + """<clist>%s</clist>
+                        """ % (self.clist)
+                    self.data = self.data + """<slist>%s</slist>
+                        """ % (self.slist)
+
             else:
                 if self.slist == "0":
                     self.data = """
                         <qdbapi>
                             <ticket>%s</ticket>
-                            <clist>%s</clist>
-                        </qdbapi>
-                        """ % (self.app.ticket, self.clist)
+                            """% (self.app.ticket)
+                    if clist:
+                        self.data = self.data + """<clist>%s</clist>
+                        """ % (self.clist)
                 else:
                     self.data = """
                         <qdbapi>
                             <ticket>%s</ticket>
-                            <clist>%s</clist>
-                            <slist>%s</slist>
-                        </qdbapi>
-                        """ % (self.app.ticket, self.clist, self.slist)
-                self.request.data = self.data.encode('utf-8')
+                            """ % (self.app.ticket)
+                    if clist:
+                        self.data = self.data + """<clist>%s</clist>
+                        """ % (self.clist)
+                    self.data = self.data + """<slist>%s</slist>
+                        """ % (self.slist)
+
         elif self.action_string == "purge":
             if not confirmation:
                 return "Purge requires confirmation."
@@ -125,9 +131,8 @@ class QuickbaseAction():
                     <qdbapi>
                         <ticket>%s</ticket>
                         <%s>%s</%s>
-                    </qdbapi>
                     """ % (self.app.ticket, query_type, self.query, query_type)
-                self.request.data = self.data.encode('utf-8')
+
         elif self.action_string == "add":
             assert type(self.data) == dict
             recordInfo = ""
@@ -138,9 +143,9 @@ class QuickbaseAction():
                     <msInUTC>%s</msInUTC>
                     <ticket>%s</ticket>
                     %s
-                </qdbapi>
+
                 """ % (send_time_in_utc, self.app.ticket, recordInfo)
-            self.request.data = self.data.encode('utf-8')
+
         elif self.action_string == "edit" or self.action_string == "csv":
             if type(self.data) == str:
                 if '"' in self.data:
@@ -161,7 +166,7 @@ class QuickbaseAction():
                     </records_csv>
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
-                </qdbapi>
+
                     """ % (send_time_in_utc, self.app.ticket, self.data, self.clist, skip_first)
             elif type(self.data) == list:
                 # print('list found')
@@ -212,7 +217,7 @@ class QuickbaseAction():
                     </records_csv>
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
-                </qdbapi>
+
                     """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, skip_first)
             elif type(self.data) == dict:
                 csv_lines = ""
@@ -242,30 +247,44 @@ class QuickbaseAction():
                     </records_csv>
                     <clist>%s</clist>
                     <skipfirst>%s</skipfirst>
-                </qdbapi>
+
                     """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, "0")
-            self.request.data = self.data.encode('utf-8')
+
+        if options is not None:
+            self.options = options
+            self.data = self.data + """
+            <options>%s</options>
+            """ % self.options
+
+        self.data = self.data + """
+                    </qdbapi>
+                        """
+        self.request.data = self.data.encode('utf-8')
+
 
     def performAction(self):
         """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
 
         :return: response
         """
-        self.content = urllib.request.urlopen(self.request).read()
+        self.content = urllib.request.urlopen(self.request).read().replace(b'<BR/>', b'\n')
         self.etree_content = etree.fromstring(self.content)
         if not self.action_string == 'csv':
             self.raw_response = etree.fromstring(self.content).findall('record')
             self.response = QuickbaseResponse(self.raw_response)
             self.fid_dict = dict()
             if not self.action_string == "add" and not self.action_string == "purge":
-                fid_list = self.clist.split('.')
-                try:
-                    field_list = list(self.raw_response[0])
-                    counter = 0
-                    for fid in fid_list:
-                        self.fid_dict[fid] = field_list[counter].tag
-                        counter += 1
-                except IndexError:
+                if self.clist:
+                    fid_list = self.clist.split('.')
+                    try:
+                        field_list = list(self.raw_response[0])
+                        counter = 0
+                        for fid in fid_list:
+                            self.fid_dict[fid] = field_list[counter].tag
+                            counter += 1
+                    except IndexError:
+                        self.fid_dict = None
+                else:
                     self.fid_dict = None
                 if not self.return_records:
                     return self.content
