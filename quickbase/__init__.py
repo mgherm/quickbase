@@ -155,6 +155,8 @@ class QuickbaseAction():
                 #     item.replace("'", "''")
                 elif "," in self.data:
                     self.data = '"' + self.data + '"'
+                if '\n' in self.data  and not (self.data[0] == '"' and self.data[-1] == '"'):
+                    self.data = '"' + self.data + '"'
                 self.data = """
                 <qdbapi>
                     <msInUTC>%s</msInUTC>
@@ -183,6 +185,8 @@ class QuickbaseAction():
                             #     item.replace("'", "''")
                             elif "," in item:
                                 item = '"' + item + '"'
+                            if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
+                                item = '"' + item + '"'
                             csv_lines += item + ","
                         csv_lines = csv_lines[:-1] + "\n"
                 elif type(self.data[0]) == str:
@@ -193,6 +197,8 @@ class QuickbaseAction():
                             print("wrong item type")
                             print(type(item))
                             print(item)
+                            if item is None:
+                                item = ""
                             # print(data)
                         # if item == None:
                         #     item = ""
@@ -204,6 +210,8 @@ class QuickbaseAction():
                         elif "," in item:
                             item = '"' + item + '"'
                             # print(item)
+                        if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
+                            item = '"' + item + '"'
                         csv_lines += item + ","
                     csv_lines = csv_lines[:-1] + "\n"
                 self.data = """
@@ -233,6 +241,8 @@ class QuickbaseAction():
                         # if "'" in item:
                         #     item.replace("'", "\'")
                         elif "," in item:
+                            item = '"' + item + '"'
+                        if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
                             item = '"' + item + '"'
                         csv_lines += item + ","
                     csv_lines = csv_lines[:-1] + "\n"
@@ -267,7 +277,7 @@ class QuickbaseAction():
 
         :return: response
         """
-        self.content = urllib.request.urlopen(self.request).read().replace(b'<BR/>', b'\n')
+        self.content = urllib.request.urlopen(self.request).read().replace(b'<BR/>', b'')
         self.etree_content = etree.fromstring(self.content)
         if not self.action_string == 'csv':
             self.raw_response = etree.fromstring(self.content).findall('record')
