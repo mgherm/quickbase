@@ -5,6 +5,13 @@ import urllib.request, urllib.parse
 import datetime, time
 import xml.etree.ElementTree as etree
 import csv
+import smtplib
+import json
+import base64
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 
 class QuickbaseApp():
@@ -155,7 +162,7 @@ class QuickbaseAction():
                 #     item.replace("'", "''")
                 elif "," in self.data:
                     self.data = '"' + self.data + '"'
-                if '\n' in self.data  and not (self.data[0] == '"' and self.data[-1] == '"'):
+                if '\n' in self.data and not (self.data[0] == '"' and self.data[-1] == '"'):
                     self.data = '"' + self.data + '"'
                 self.data = """
                 <qdbapi>
@@ -713,3 +720,54 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
     response = urllib.request.urlopen(request).read()
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)
+
+def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None):
+    """
+
+    :rtype : object
+    """
+    COMMASPACE = ', '
+    if fromaddr is None:
+        fromaddr = "noreply@cictr.com"
+    if not destination:
+        toaddr = ["herman@cictr.com"]
+    else:
+        toaddr = destination
+    subject = sub
+    content = ""
+    if con:
+        for line in con:
+            content += (str(line) + '\r\n')
+
+    if file_path:
+        attachment = MIMEBase('appplication', 'octet-stream')
+        with open(file_path, 'rb') as attached_file:
+            attachment.set_payload(attached_file.read())
+        encoders.encode_base64(attachment)
+        attachment.add_header('Content-disposition', 'attachment; filename='+file_name)
+
+    authenticator = dict()
+    with open("smtp.cfg", 'r') as config_file:
+        r = csv.reader(config_file)
+        for row in r:
+            authenticator[row[0]] = row[1]
+    user = "noreply@cictr.com"
+    passwd = authenticator[user]
+
+    msg = MIMEMultipart()
+    msg['Subject'] = subject
+    msg['From'] = fromaddr
+    msg['To'] = COMMASPACE.join(toaddr)
+    msg.attach(MIMEText(content))
+    if file_path:
+        msg.attach(attachment)
+    smtp = smtplib.SMTP("costner.cictr.com", port=587)
+    # smtp.set_debuglevel(1)
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.ehlo()
+    smtp.login(user, passwd)
+    # smtp.docmd('AUTH', 'XOAUTH2 ' + authString.decode('utf-8'))
+    smtp.send_message(msg)
+    smtp.quit()
+    # syslog.syslog("Email sent to " + str(toaddr))
