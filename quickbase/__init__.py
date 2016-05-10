@@ -721,7 +721,7 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)
 
-def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None):
+def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None):
     """
 
     :rtype : object
@@ -733,6 +733,8 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
         toaddr = ["herman@cictr.com"]
     else:
         toaddr = destination
+    if smtp_cfg is None:
+        smtp_cfg = "smtp.cfg"
     subject = sub
     content = ""
     if con:
@@ -747,7 +749,7 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
         attachment.add_header('Content-disposition', 'attachment; filename='+file_name)
 
     authenticator = dict()
-    with open("./smtp.cfg", 'r') as config_file:
+    with open(smtp_cfg, 'r') as config_file:
         r = csv.reader(config_file)
         for row in r:
             authenticator[row[0]] = row[1]
