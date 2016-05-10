@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../EmailLists/.idea/EmailLists.iml" filepath="$PROJECT_DIR$/../EmailLists/.idea/EmailLists.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../SAltoRobotPython/.idea/SaltoRobotPython.iml" filepath="$PROJECT_DIR$/../SAltoRobotPython/.idea/SaltoRobotPython.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/quickbase.iml" filepath="$PROJECT_DIR$/.idea/quickbase.iml" />
     </modules>
   </component>

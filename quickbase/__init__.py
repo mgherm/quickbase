@@ -747,7 +747,7 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
         attachment.add_header('Content-disposition', 'attachment; filename='+file_name)
 
     authenticator = dict()
-    with open("smtp.cfg", 'r') as config_file:
+    with open("./smtp.cfg", 'r') as config_file:
         r = csv.reader(config_file)
         for row in r:
             authenticator[row[0]] = row[1]
