@@ -286,7 +286,7 @@ class QuickbaseAction():
         """
         self.content = urllib.request.urlopen(self.request).read().replace(b'<BR/>', b'')
         self.etree_content = etree.fromstring(self.content)
-        if not self.action_string == 'csv':
+        if not self.action_string == 'csv' or self.action_string == 'edit':
             self.raw_response = etree.fromstring(self.content).findall('record')
             self.response = QuickbaseResponse(self.raw_response)
             self.fid_dict = dict()
@@ -319,7 +319,7 @@ class QuickbaseAction():
                 else:
                     response_dict['errdetail'] = None
                 return response_dict
-        if self.action_string == 'csv':
+        if self.action_string == 'csv' or self.action_string == 'edit':
             # print(self.content)
             resp = etree.fromstring(self.content)
             if resp.find('num_recs_input') is not None:
