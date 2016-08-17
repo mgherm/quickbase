@@ -284,7 +284,9 @@ class QuickbaseAction():
 
         :return: response
         """
-        self.content = urllib.request.urlopen(self.request).read().replace(b'<BR/>', b'')
+        self.response_object = urllib.request.urlopen(self.request)
+        self.status = self.response_object.status
+        self.content = self.response_object.read().replace(b'<BR/>', b'')
         self.etree_content = etree.fromstring(self.content)
         if not self.action_string == 'csv' or self.action_string == 'edit':
             self.raw_response = etree.fromstring(self.content).findall('record')
