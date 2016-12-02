@@ -184,6 +184,8 @@ class QuickbaseAction():
                     # print('2nd list found')
                     for line in self.data:
                         for item in line:
+                            if item is None:
+                                item = ''
                             assert type(item) == str
                             if '"' in item:
                                 item = item.replace('"', '""')
@@ -198,6 +200,8 @@ class QuickbaseAction():
                         csv_lines = csv_lines[:-1] + "\n"
                 elif type(self.data[0]) == str:
                     for item in self.data:
+                        if item is None:
+                            item = ''
                         try:
                             assert type(item) == str
                         except AssertionError:
@@ -241,6 +245,8 @@ class QuickbaseAction():
                     line = self.data[record_id]
                     csv_lines += record_id + ','
                     for item in line:
+                        if item is None:
+                            item = ''
                         assert type(item) == str
                         if '"' in item:
                             item = item.replace('"', '""')
