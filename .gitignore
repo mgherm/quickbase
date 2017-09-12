@@ -100,4 +100,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-idea/
+# PyCharm settings
+.idea
