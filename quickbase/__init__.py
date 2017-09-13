@@ -16,6 +16,89 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 
+import os
+import pytz
+from urllib.parse import urlparse
+from influxdb import InfluxDBClient
+
+class Analytics:
+    """ Class for gathering Quickbase usage statistics """
+
+    def __init__(self, events_db_url=None, verify_ssl=True):
+        """
+        Initializes class for collecting Quickbase usage statistics. It should gracefully abort on failure
+        :param events_db_url: URL to Influx DB. Optional - it could also be passed by env variable. If no events_db_url
+        is given, it fails gracefully
+        """
+        self.collecting = False
+
+        try:
+            if not events_db_url:
+                events_db_url = os.environ.get('EVENTS_DB_URL')
+
+            if events_db_url:
+                parsed_url = urlparse(events_db_url)
+                self.influxdb_host = parsed_url.hostname
+                self.influxdb_port = parsed_url.port
+                self.influxdb_user = parsed_url.username
+                self.influxdb_pass = parsed_url.password
+                self.influxdb_db = parsed_url.path[1:]
+                self.influxdb_scheme = parsed_url.scheme
+
+                if parsed_url.scheme == 'https':
+                    self.influxdb_ssl = True
+                else:
+                    self.influxdb_ssl = False
+
+                self.influxdb = InfluxDBClient(
+                    self.influxdb_host,
+                    self.influxdb_port,
+                    self.influxdb_user,
+                    self.influxdb_pass,
+                    self.influxdb_db,
+                    self.influxdb_ssl,
+                    verify_ssl
+                )
+
+                self.collecting = True
+        except Exception:
+            pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
+
+    def collect(self, measurement='quickbase_api_call', tags=None, ts=None, fields=None):
+        """
+        Collects a data point
+        :param measurement: Name of measurement
+        :param tags: A dict of tags
+        :param ts: Datetime object. Optional
+        :param fields: A dict of fields. Defaults to {'value': 1}
+        """
+
+        if self.collecting:
+            try:
+                point = {
+                    'measurement': measurement,
+                    'tags': {
+                        'env': os.environ.get('GSET_ENV', ''),
+                        'container': os.environ.get('GSET_CONTAINER', '')
+                    },
+                    'time': datetime.datetime.now(tz=pytz.UTC),
+                    'fields': {
+                        'value': 1
+                    }
+                }
+
+                if tags:
+                    point['tags'] = {**point['tags'], **tags}
+
+                if ts:
+                    point['time'] = ts
+
+                if fields:
+                    point['fields'] = {**point['fields'], **fields}
+
+                self.influxdb.write_points([point], database=self.influxdb_db)
+            except Exception as e:
+                pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
 
 class QuickbaseApp():
     def __init__(self, baseurl, ticket, tables, token=None, **kwargs):
@@ -49,6 +132,7 @@ class QuickbaseAction():
         :param action: query, add, edit, qid or csv
         :return:
         """
+
         if time_in_utc:
             send_time_in_utc = "1"
         else:
@@ -279,6 +363,9 @@ class QuickbaseAction():
         :return: response
         """
         self.response_object = urllib.request.urlopen(self.request) # do the thing
+
+        Analytics().collect(tags={'action': self.action})
+
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
         self.etree_content = etree.fromstring(self.content)
@@ -421,9 +508,11 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     Query:query={CONDITIONS}. Should not contain any HTML encoding
     Clist: a period-separated list of fields you want returned
     """
+    action = 'API_DoQuery'
+
     query = urllib.request.Request(url + dbid)
     query.add_header("Content-Type", "application/xml")
-    query.add_header("QUICKBASE-ACTION", "API_DoQuery")
+    query.add_header("QUICKBASE-ACTION", action)
     if "query=" in request:
         v, request = request.split("=", 1)
     if slist == "0":
@@ -447,6 +536,9 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
         """ % ('0', ticket, request, clist, slist)
     query.data = data.encode('utf-8')
     content = urllib.request.urlopen(query).read()
+
+    Analytics().collect(tags={'action': action})
+
     if not returnRecords:
         return content
     else:
@@ -459,9 +551,11 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     all required fields (especially related client).
     fieldValuePairs must use fid values as key, not field names
     """
+    action = 'API_AddRecord'
+
     query = urllib.request.Request(url + dbid)
     query.add_header("Content-Type", "application/xml")
-    query.add_header("QUICKBASE-ACTION", "API_AddRecord")
+    query.add_header("QUICKBASE-ACTION", action)
     recordInfo = ""
     for field in fieldValuePairs:
         recordInfo += '<field fid="' + str(field) + '">' + str(fieldValuePairs[field]) + "</field>\n"
@@ -475,6 +569,9 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
 
     query.data = data.encode('utf-8')
     response = urllib.request.urlopen(query)
+
+    Analytics().collect(tags={'action': action})
+
     return response
 
 
@@ -553,9 +650,11 @@ def MonthDict(testDate):
 
 
 def QBEdit(url, ticket, dbid, rid, field, value):
+    action = 'API_EditRecord'
+
     query = urllib.request.Request(url + dbid)
     query.add_header("Content-Type", "application/xml")
-    query.add_header("QUICKBASE-ACTION", "API_EditRecord")
+    query.add_header("QUICKBASE-ACTION", action)
     data = """
         <qdbapi>
             <msInUTC>%s</msInUTC>
@@ -566,6 +665,9 @@ def QBEdit(url, ticket, dbid, rid, field, value):
     """ % ('0', ticket, rid, field, value)
     query.data = data.encode('utf-8')
     response = urllib.request.urlopen(query)
+
+    Analytics().collect(tags={'action': action})
+
     return response
 
 
@@ -584,9 +686,11 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     :return: response contains troubleshooting information including error code and value, count of records added,
     and count of records edited.
     """
+    action = 'API_ImportFromCSV'
+
     request = urllib.request.Request(url + dbid)
     request.add_header("Content-Type", "application/xml")
-    request.add_header("QUICKBASE-ACTION", "API_ImportFromCSV")
+    request.add_header("QUICKBASE-ACTION", action)
     if type(csvData) == str:
         data = """
         <qdbapi>
@@ -654,6 +758,9 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
         return None
     request.data = data.encode('utf-8')
     response = urllib.request.urlopen(request).read()
+
+    Analytics().collect(tags={'action': action})
+
     return response
 
 
@@ -661,6 +768,8 @@ def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
     csv_file = file_name
     urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket,
                                csv_file)
+
+    Analytics().collect(tags={'action': 'download_csv'})
 
 
 def csvSort(input_file,
@@ -722,6 +831,8 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
     response = urllib.request.urlopen(request).read()
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)
+
+    Analytics().collect(tags={'action': 'download_file'})
 
 def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None):
     """
