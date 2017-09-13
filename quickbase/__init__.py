@@ -88,13 +88,13 @@ class Analytics:
                 }
 
                 if tags:
-                    point['tags'] = {**point['tags'], **tags}
+                    point['tags'].update(tags)
 
                 if ts:
                     point['time'] = ts
 
                 if fields:
-                    point['fields'] = {**point['fields'], **fields}
+                    point['fields'].update(fields)
 
                 self.influxdb.write_points([point], database=self.influxdb_db)
             except Exception as e:
