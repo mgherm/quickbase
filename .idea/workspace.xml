@@ -4,10 +4,8 @@
     <bookmark url="file://$PROJECT_DIR$/quickbase/__init__.py" line="302" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added &quot;status&quot; attribute to">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added &quot;variable&quot; as an option to set a variable value via QuickbaseAction">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,28 +24,6 @@
   </component>
   <component name="ProjectId" id="1TWOs1tFDMrKDiqJpQbcyecncSZ" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
-  <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
-      <flattenPackages />
-      <showMembers />
-      <showModules />
-      <showLibraryContents />
-      <hideEmptyPackages />
-      <abbreviatePackageNames />
-      <autoscrollToSource />
-      <autoscrollFromSource />
-      <sortByType />
-      <manualOrder />
-      <foldersAlwaysOnTop value="true" />
-    </navigator>
-    <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
-      <pane id="ProjectPane">
-        <subPane />
-      </pane>
-    </panes>
-  </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="full.screen.before.presentation.mode" value="false" />
@@ -61,12 +37,6 @@
     <property name="recentsLimit" value="5" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
-  </component>
-  <component name="Push.Settings">
-    <excluded-roots>
-      <path value="$PROJECT_DIR$/../EmailLists" />
-      <path value="$PROJECT_DIR$/../SAltoRobotPython" />
-    </excluded-roots>
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -260,7 +230,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1426087927705</updated>
-      <workItem from="1573572589141" duration="1389000" />
+      <workItem from="1573572589141" duration="2813000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -353,7 +323,14 @@
       <option name="project" value="LOCAL" />
       <updated>1499085602678</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Added &quot;variable&quot; as an option to set a variable value via QuickbaseAction">
+      <created>1573575207113</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1573575207113</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -391,6 +368,7 @@
     <MESSAGE value="UTC/EST bug fix" />
     <MESSAGE value="Changed &quot;edit&quot; actions to respond the same as &quot;csv&quot; actions" />
     <MESSAGE value="In-line documentation added" />
-    <option name="LAST_COMMIT_MESSAGE" value="In-line documentation added" />
+    <MESSAGE value="Added &quot;variable&quot; as an option to set a variable value via QuickbaseAction" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added &quot;variable&quot; as an option to set a variable value via QuickbaseAction" />
   </component>
 </project>

@@ -358,7 +358,7 @@ class QuickbaseAction():
                     <qdbapi>
                         <msInUTC>%s</msInUTC>
                         <ticket>%s</ticket>
-                        <varname>%s></varname>
+                        <varname>%s</varname>
                         <value>%s</value>
                     """ % (send_time_in_utc, self.app.ticket, variable_name, variable_value)
         if options is not None:
