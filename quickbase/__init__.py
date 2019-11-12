@@ -67,6 +67,8 @@ class QuickbaseAction():
             self.action = "API_ImportFromCSV"
         elif action.lower() == "purge":
             self.action = "API_PurgeRecords"
+        elif action.lower() == "variable":
+            self.action = "API_SetDBVar"
         self.request.add_header("Content-Type", "application/xml")
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records    # return the records from the response, or the response itself
@@ -262,6 +264,19 @@ class QuickbaseAction():
                     <skipfirst>%s</skipfirst>
 
                     """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, "0")
+        elif self.action_string == "variable":
+            assert type(self.data) == dict
+            assert len(self.data) == 1
+            for variable in self.data:
+                variable_name = variable
+                variable_value = self.data[variable]
+                self.data = """
+                    <qdbapi>
+                        <msInUTC>%s</msInUTC>
+                        <ticket>%s</ticket>
+                        <varname>%s></varname>
+                        <value>%s</value>
+                    """ % (send_time_in_utc, self.app.ticket, variable_name, variable_value)
         if options is not None:
             self.options = options  # custom options
             self.data = self.data + """
@@ -399,7 +414,7 @@ def generateTableDict(import_filename):
     Takes a csv generated from the Quickbase App Management/Show Support Information page and returns a dict of table
     names and dbids
     :param import_filename: name of the file to parse
-    :return:
+    :return table_dict: the table dict
     """
     table_dict = dict()
     with open(import_filename, 'r') as csv_file:
