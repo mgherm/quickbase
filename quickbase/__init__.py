@@ -496,6 +496,43 @@ class UTC(datetime.tzinfo):
         return "UTC"
 
 
+def getTableFIDDict(app_object, dbid):
+    """
+    Uses API_GetSchema to generate a dict of FIDs by field name. Note that the responses here include a lot of extra
+    information and generate a large (up to 1MB or more for some tables) response. This module should only be run as
+    necessary. Also note that the field names returned by API_GetSchema are as defined in the Quickbase app, and thus
+    include non-alphanumeric characters and original capitalization. To use this in conjunction with an API query
+    response, it will be necessary to use a regular expression to convert all non-alphanumeric characters to underscores
+    and also convert all field names to lower case.
+    :param app_object:
+    :param dbid:
+    :return:
+    """
+    if dbid in app_object.tables:
+        table = app_object.tables[dbid]
+    else:
+        table = dbid
+    request = urllib.request.Request(app_object.base_url + table)
+    request.add_header("Content-type", "application/xml")
+    request.add_header("QUICKBASE-ACTION", "API_GetSchema")
+    data = """
+    <qdbapi>
+        <ticket>%s</ticket>
+    </qdbapi>""" % (app_object.ticket)
+    request.data = data.encode('utf-8')
+    response = urllib.request.urlopen(request)
+    status = response.status
+    field_dict = dict()
+    if status == 200:
+        response_content = response.read().replace(b'<BR/>', b'')
+        fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
+        for field in fields:
+            field_name = field.find('label').text
+            field_id = field.attrib['id']
+            field_dict[field_name] = field_id
+    return field_dict
+
+
 def generateTableDict(import_filename):
     """
     Takes a csv generated from the Quickbase App Management/Show Support Information page and returns a dict of table
