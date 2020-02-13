@@ -497,7 +497,7 @@ class UTC(datetime.tzinfo):
         return "UTC"
 
 
-def getTableFIDDict(app_object, dbid):
+def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
     """
     Uses API_GetSchema to generate a dict of FIDs by field name. Note that the responses here include a lot of extra
     information and generate a large (up to 1MB or more for some tables) response. This module should only be run as
@@ -531,9 +531,11 @@ def getTableFIDDict(app_object, dbid):
         for field in fields:
             field_name = field.find('label').text
             field_id = field.attrib['id']
-            field_dict[field_name] = field_id
-            alphanumeric_key = alphanumeric_regex.sub("_", field_name).lower()
-            field_dict[alphanumeric_key] = field_id
+            if return_standard:
+                field_dict[field_name] = field_id
+            if return_alphanumeric:
+                alphanumeric_key = alphanumeric_regex.sub("_", field_name).lower()
+                field_dict[alphanumeric_key] = field_id
     return field_dict
 
 

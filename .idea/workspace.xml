@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added getTableFIDDict, which uses API_GetSchema to generate a">
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Same as previous but works now.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,7 +237,8 @@
       <updated>1426087927705</updated>
       <workItem from="1573572589141" duration="8128000" />
       <workItem from="1573754208630" duration="1224000" />
-      <workItem from="1581606008260" duration="683000" />
+      <workItem from="1581606008260" duration="964000" />
+      <workItem from="1581609481139" duration="2318000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -342,7 +345,21 @@
       <option name="project" value="LOCAL" />
       <updated>1573579111025</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Added alphanumeric conversion for GetTableFIDDict to match field name format in returned records.">
+      <created>1581609310906</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1581609310906</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Same as previous but works now.">
+      <created>1581609590269</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1581609590269</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -384,14 +401,26 @@
     <MESSAGE value="In-line documentation added" />
     <MESSAGE value="Added &quot;variable&quot; as an option to set a variable value via QuickbaseAction" />
     <MESSAGE value="Fixed typo that appended '&gt;' to the end of the variable name" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed typo that appended '&gt;' to the end of the variable name" />
+    <MESSAGE value="Added alphanumeric conversion for GetTableFIDDict to match field name format in returned records." />
+    <MESSAGE value="Same as previous but works now." />
+    <option name="LAST_COMMIT_MESSAGE" value="Same as previous but works now." />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="623" y="150" key="CommitChangelistDialog2" timestamp="1581609589731">
+      <screen x="0" y="0" width="2048" height="1112" />
+    </state>
+    <state x="623" y="150" key="CommitChangelistDialog2/0.0.2048.1112/2050.-1445.1440.2520/-510.-1440.2560.1400@0.0.2048.1112" timestamp="1581609589731" />
+    <state x="616" y="288" key="Vcs.Push.Dialog.v2" timestamp="1581609592387">
+      <screen x="0" y="0" width="2048" height="1112" />
+    </state>
+    <state x="616" y="288" key="Vcs.Push.Dialog.v2/0.0.2048.1112/2050.-1445.1440.2520/-510.-1440.2560.1400@0.0.2048.1112" timestamp="1581609592387" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>459</line>
+          <line>460</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
