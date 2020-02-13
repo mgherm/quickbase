@@ -529,10 +529,10 @@ def getTableFIDDict(app_object, dbid):
         response_content = response.read().replace(b'<BR/>', b'')
         fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
         for field in fields:
-            alphanumeric_key = alphanumeric_regex.sub("_", key).lower()
             field_name = field.find('label').text
             field_id = field.attrib['id']
             field_dict[field_name] = field_id
+            alphanumeric_key = alphanumeric_regex.sub("_", field_name).lower()
             field_dict[alphanumeric_key] = field_id
     return field_dict
 
