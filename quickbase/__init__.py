@@ -11,6 +11,7 @@ import csv
 import smtplib
 import json
 import base64
+import re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -523,13 +524,16 @@ def getTableFIDDict(app_object, dbid):
     response = urllib.request.urlopen(request)
     status = response.status
     field_dict = dict()
+    alphanumeric_regex = re.compile('\W')
     if status == 200:
         response_content = response.read().replace(b'<BR/>', b'')
         fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
         for field in fields:
+            alphanumeric_key = alphanumeric_regex.sub("_", key).lower()
             field_name = field.find('label').text
             field_id = field.attrib['id']
             field_dict[field_name] = field_id
+            field_dict[alphanumeric_key] = field_id
     return field_dict
 
 
