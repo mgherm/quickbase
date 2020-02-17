@@ -125,12 +125,13 @@ class QuickbaseAction():
     also contain any response from Quickbase
     """
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0", time_in_utc=False, confirmation=False, options=None):
+                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False):
         """
 
         :param app: class QuickbaseApp
         :param dbid_key: dbid label
         :param action: query, add, edit, qid or csv
+        :param force_utf8: adds encoding tag in request
         :return:
         """
 
@@ -169,15 +170,17 @@ class QuickbaseAction():
             self.clist = clist
         self.query = query
         if self.action_string == "query" or self.action_string == "qid" or self.action_string == 'qname':
+            encoding = '<encoding>utf-8</encoding>' if force_utf8 else ''
             if self.query:  # build the query request
                 if "query=" in self.query or "qid=" in self.query or "qname=" in self.query:
                     v, self.query = self.query.split("=", 1)
                 if self.slist == "0":
                     self.data = """
                         <qdbapi>
+                            %s
                             <ticket>%s</ticket>
                             <%s>%s</%s>
-                            """ % (self.app.ticket, self.action_string, self.query, self.action_string)
+                            """ % (encoding, self.app.ticket, self.action_string, self.query, self.action_string)
                     if clist:
                         self.data = self.data + """<clist>%s</clist>
                         """ % (self.clist)
@@ -185,9 +188,10 @@ class QuickbaseAction():
                 else:
                     self.data = """
                         <qdbapi>
+                            %s
                             <ticket>%s</ticket>
                             <%s>%s</%s>
-                            """% (self.app.ticket, self.action_string, self.query, self.action_string)
+                            """% (encoding, self.app.ticket, self.action_string, self.query, self.action_string)
                     if clist:
                         self.data = self.data + """<clist>%s</clist>
                         """ % (self.clist)
@@ -197,16 +201,18 @@ class QuickbaseAction():
                 if self.slist == "0":
                     self.data = """
                         <qdbapi>
+                            %s
                             <ticket>%s</ticket>
-                            """% (self.app.ticket)
+                            """% (encoding, self.app.ticket)
                     if clist:
                         self.data = self.data + """<clist>%s</clist>
                         """ % (self.clist)
                 else:
                     self.data = """
                         <qdbapi>
+                            %s
                             <ticket>%s</ticket>
-                            """ % (self.app.ticket)
+                            """ % (encoding, self.app.ticket)
                     if clist:
                         self.data = self.data + """<clist>%s</clist>
                         """ % (self.clist)
