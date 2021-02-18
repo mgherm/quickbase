@@ -556,6 +556,9 @@ def generateTableDict(import_filename):
     with open(import_filename, 'r') as csv_file:
         r = csv.reader(csv_file)
         for row in r:
+            if row[0] not in table_dict:
+                table_dict[row[0]] = row[2]
+                table_dict[row[0].lower()] = row[2]
             table_dict[row[1]] = row[2]
             table_dict[row[1].lower()] = row[2]
     return table_dict
