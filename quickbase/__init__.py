@@ -155,6 +155,9 @@ class QuickbaseAction():
             self.action = "API_PurgeRecords"
         elif action.lower() == "variable":
             self.action = "API_SetDBVar"
+        elif action.lower() == "querycount":
+            self.action = "API_DoQueryCount"
+            self.action_string = "query"
         self.request.add_header("Content-Type", "application/xml")
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records    # return the records from the response, or the response itself
