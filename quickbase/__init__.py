@@ -172,7 +172,10 @@ class QuickbaseAction():
         else:
             self.clist = clist
         self.query = query
-        if self.action_string == "query" or self.action_string == "qid" or self.action_string == 'qname':
+        if self.action_string == "query" or \
+                self.action_string == "qid" or \
+                self.action_string == 'qname' or \
+                self.action_string == 'querycount':
             encoding = '<encoding>utf-8</encoding>' if force_utf8 else ''
             if self.query:  # build the query request
                 if "query=" in self.query or "qid=" in self.query or "qname=" in self.query:
@@ -394,7 +397,11 @@ class QuickbaseAction():
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
         self.etree_content = etree.fromstring(self.content)
-        if not self.action_string == 'csv' or self.action_string == 'edit':
+        if self.action == 'API_DoQueryCount':
+            self.raw_response = etree.fromstring(self.content).find('numMatches')
+            self.response = QuickbaseResponse(self.raw_response)
+            return self.raw_response.text
+        elif not self.action_string == 'csv' or self.action_string == 'edit':
             self.raw_response = etree.fromstring(self.content).findall('record')
             self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
             self.fid_dict = dict()
