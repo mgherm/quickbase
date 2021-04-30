@@ -7,6 +7,7 @@ __author__ = 'Herman'
 import urllib.request, urllib.parse
 import datetime, time
 import xml.etree.ElementTree as etree
+import xml
 import csv
 import smtplib
 import json
@@ -140,6 +141,7 @@ class QuickbaseAction():
         else:
             send_time_in_utc = "0"
         self.app = app
+        self.force_utf8 = force_utf8
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
@@ -396,13 +398,20 @@ class QuickbaseAction():
 
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        self.etree_content = etree.fromstring(self.content)
+        if self.force_utf8:
+            try:
+                self.etree_content = etree.fromstring(self.content)
+            except xml.etree.ElementTree.ParseError:
+                parser = etree.XMLParser(encoding='cp1252')
+                self.etree_content = etree.fromstring(self.content, parser=parser)
+        else:
+            self.etree_content = etree.fromstring(self.content)
         if self.action == 'API_DoQueryCount':
             self.raw_response = etree.fromstring(self.content).find('numMatches')
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
         elif not self.action_string == 'csv' or self.action_string == 'edit':
-            self.raw_response = etree.fromstring(self.content).findall('record')
+            self.raw_response = self.etree_content.findall('record')
             self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
             self.fid_dict = dict()
             if not self.action_string == "add" and not self.action_string == "purge":
