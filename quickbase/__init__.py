@@ -398,16 +398,16 @@ class QuickbaseAction():
 
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        if self.force_utf8:
-            try:
-                self.etree_content = etree.fromstring(self.content)
-            except xml.etree.ElementTree.ParseError:
-                parser = etree.XMLParser(encoding='cp1252')
-                self.etree_content = etree.fromstring(self.content, parser=parser)
-        else:
+        # if self.force_utf8:
+        try:
             self.etree_content = etree.fromstring(self.content)
+        except xml.etree.ElementTree.ParseError:
+            parser = etree.XMLParser(encoding='cp1252')
+            self.etree_content = etree.fromstring(self.content, parser=parser)
+        # else:
+        #     self.etree_content = etree.fromstring(self.content)
         if self.action == 'API_DoQueryCount':
-            self.raw_response = etree.fromstring(self.content).find('numMatches')
+            self.raw_response = etree_content.find('numMatches')
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
         elif not self.action_string == 'csv' or self.action_string == 'edit':
@@ -428,7 +428,7 @@ class QuickbaseAction():
                 else:
                     self.fid_dict = None
                 if not self.return_records:
-                    return self.content
+                    return self.etree_content
                 else:
                     return self.raw_response
             else:
@@ -444,7 +444,7 @@ class QuickbaseAction():
                     response_dict['errdetail'] = None
                 return response_dict
         if self.action_string == 'csv' or self.action_string == 'edit':
-            resp = etree.fromstring(self.content)
+            resp = self.etree_content
             if resp.find('num_recs_input') is not None: # records received from the query
                 self.num_recs_input = resp.find('num_recs_input').text
             else:
@@ -458,14 +458,14 @@ class QuickbaseAction():
             else:
                 self.num_recs_updated = "0"
             self.rid_list = list()
-            rids = etree.fromstring(self.content).find('rids')  # record id numbers
+            rids = self.etree_content.find('rids')  # record id numbers
             try:
                 for rid in rids.findall('rid'):
                     self.rid_list.append(rid.text)
                 return self.rid_list
             except AttributeError as err:
                 print(err)
-                print(self.content)
+                print(self.etree_content)
 
 
 class QuickbaseResponse():
@@ -552,7 +552,11 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
     alphanumeric_regex = re.compile('\W')
     if status == 200:
         response_content = response.read().replace(b'<BR/>', b'')
-        fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
+        try:
+            fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
+        except xml.etree.ElementTree.ParseError:
+            parser = etree.XMLParser(encoding='cp1252')
+            fields = etree.fromstring(response_content, parser=parser).find('table').find('fields').findall('field')
         for field in fields:
             field_name = field.find('label').text
             field_id = field.attrib['id']
@@ -628,7 +632,11 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     if not returnRecords:
         return content
     else:
-        return etree.fromstring(content).findall('record')
+        try:
+            return etree.fromstring(content).findall('record')
+        except xml.etree.ElementTree.ParseError:
+            parser = etree.XMLParser(encoding='cp1252')
+            return etree.fromstring(content, parser=parser).findall('record')
 
 
 def QBAdd(url, ticket, dbid, fieldValuePairs):
