@@ -25,7 +25,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added a catch for all xml parsing functions to use cp1252 if it encounters an error.">
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added parsing check to decode responses in cp1252 if decoding in utf8 fails">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
@@ -69,7 +69,6 @@
     <property name="node.js.path.for.package.tslint" value="project" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
-    <property name="recentsLimit" value="5" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
@@ -274,6 +273,15 @@
       <workItem from="1620321466241" duration="25000" />
       <workItem from="1620324050897" duration="2056000" />
       <workItem from="1622221753747" duration="3591000" />
+      <workItem from="1622577919746" duration="1321000" />
+      <workItem from="1622581491536" duration="77000" />
+      <workItem from="1622581931390" duration="4670000" />
+      <workItem from="1622727802932" duration="643000" />
+      <workItem from="1623160480366" duration="83000" />
+      <workItem from="1625244920738" duration="2222000" />
+      <workItem from="1625251359602" duration="315000" />
+      <workItem from="1625252520037" duration="62000" />
+      <workItem from="1625252840445" duration="954000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -408,7 +416,14 @@
       <option name="project" value="LOCAL" />
       <updated>1619800192373</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="Added parsing check to decode responses in cp1252 if decoding in utf8 fails">
+      <created>1622578003622</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1622578003622</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -453,20 +468,26 @@
     <MESSAGE value="Same as previous but works now." />
     <MESSAGE value="Added option to use the table # or 'application' label for table dicts in generateTableDict" />
     <MESSAGE value="Added functionality to force_utf8 to make it actually parse the XML response correctly. At most, should make it work properly when called." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added functionality to force_utf8 to make it actually parse the XML response correctly. At most, should make it work properly when called." />
+    <MESSAGE value="Added parsing check to decode responses in cp1252 if decoding in utf8 fails" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added parsing check to decode responses in cp1252 if decoding in utf8 fails" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>485</line>
+          <line>500</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>476</line>
+          <line>491</line>
           <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
+          <line>414</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

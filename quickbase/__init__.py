@@ -395,25 +395,40 @@ class QuickbaseAction():
         self.response_object = urllib.request.urlopen(self.request) # do the thing
 
         Analytics().collect(tags={'action': self.action})
-
+        #TODO: Treat query responses as list by splitting the raw content on the "record" key!
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
         # if self.force_utf8:
-        try:
-            self.etree_content = etree.fromstring(self.content)
-        except xml.etree.ElementTree.ParseError:
-            parser = etree.XMLParser(encoding='cp1252')
-            self.etree_content = etree.fromstring(self.content, parser=parser)
-        # else:
-        #     self.etree_content = etree.fromstring(self.content)
+        if self.action == "API_DoQuery":
+            self.etree_content = parseQueryContent(self.content)
+        else:
+            try:
+                self.etree_content = etree.fromstring(self.content)
+            except xml.etree.ElementTree.ParseError as err:
+                try:
+                    parser = etree.XMLParser(encoding='cp1252')
+                    self.etree_content = etree.fromstring(self.content, parser=parser)
+                except Exception as err2:
+                    try:
+                        self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                    except Exception as err3:
+                        print("triple exception caught")
+                        raise Exception(str(err3))
         if self.action == 'API_DoQueryCount':
             self.raw_response = etree_content.find('numMatches')
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
         elif not self.action_string == 'csv' or self.action_string == 'edit':
-            self.raw_response = self.etree_content.findall('record')
-            self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
-            self.fid_dict = dict()
+            if type(self.etree_content) != list:
+                self.raw_response = self.etree_content.findall('record')
+                self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
+                self.fid_dict = dict()
+            else:
+                self.raw_response = list()
+                for content in self.etree_content:
+                    self.raw_response.append(content.getchildren())
+                self.response = QuickbaseResponse(self.raw_response)
+                self.fid_dict = dict()
             if not self.action_string == "add" and not self.action_string == "purge":
                 if self.clist:
                     fid_list = self.clist.split('.')
@@ -421,7 +436,7 @@ class QuickbaseAction():
                         field_list = list(self.raw_response[0])
                         counter = 0
                         for fid in fid_list:
-                            self.fid_dict[fid] = field_list[counter].tag    # map field names to field id numbers
+                            self.fid_dict[fid] = field_list[counter].tag  # map field names to field id numbers
                             counter += 1
                     except IndexError:
                         self.fid_dict = None
@@ -521,6 +536,21 @@ class UTC(datetime.tzinfo):
     def tzname(self, dt):
         return "UTC"
 
+def parseQueryContent(content):
+    records = content.split(b'</record>')
+    full_content = list()
+    for record in records:
+        if not b'<record>' in record:
+            continue
+        record += b'</record>'
+        if b'</chdbids>' in record:
+            record = record.split(b'</chdbids>')[1]
+        try:
+            etree_content = etree.fromstring(record)
+        except Exception as err:
+            etree_content = etree.fromstring(record.decode('cp1252'))
+        full_content.append(etree_content)
+    return full_content
 
 def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
     """
