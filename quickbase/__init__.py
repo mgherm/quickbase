@@ -395,7 +395,6 @@ class QuickbaseAction():
         self.response_object = urllib.request.urlopen(self.request) # do the thing
 
         Analytics().collect(tags={'action': self.action})
-        #TODO: Treat query responses as list by splitting the raw content on the "record" key!
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
         # if self.force_utf8:
@@ -414,32 +413,40 @@ class QuickbaseAction():
                     except Exception as err3:
                         print("triple exception caught")
                         raise Exception(str(err3))
+        self.fid_dict = dict()
         if self.action == 'API_DoQueryCount':
-            self.raw_response = etree_content.find('numMatches')
+            self.raw_response = self.etree_content.find('numMatches')
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
         elif not self.action_string == 'csv' or self.action_string == 'edit':
-            if type(self.etree_content) != list:
+            if type(self.etree_content) == list and type(self.etree_content[0]) == dict:
+                try:
+                    self.raw_response = etree.fromstring(self.content).findall('record')
+                except:
+                    self.raw_response = None
+                self.response = QuickbaseResponse([])
+                self.response.values = self.etree_content
+                self.response.records = self.content
+            elif type(self.etree_content) != list:
                 self.raw_response = self.etree_content.findall('record')
                 self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
-                self.fid_dict = dict()
+
             else:
                 self.raw_response = list()
                 for content in self.etree_content:
                     self.raw_response.append(content.getchildren())
                 self.response = QuickbaseResponse(self.raw_response)
-                self.fid_dict = dict()
             if not self.action_string == "add" and not self.action_string == "purge":
                 if self.clist:
                     fid_list = self.clist.split('.')
                     try:
-                        field_list = list(self.raw_response[0])
+                        field_list = [x for x in self.response.values[0]]
                         counter = 0
                         for fid in fid_list:
-                            self.fid_dict[fid] = field_list[counter].tag  # map field names to field id numbers
+                            self.fid_dict[fid] = field_list[counter]  # map field names to field id numbers
                             counter += 1
                     except IndexError:
-                        self.fid_dict = None
+                        self.fid_dict[fid] = None   #CAUTION: Quickbase will not tell you if you include an invalid field ID in a clist!
                 else:
                     self.fid_dict = None
                 if not self.return_records:
@@ -546,9 +553,9 @@ def parseQueryContent(content):
         if b'</chdbids>' in record:
             record = record.split(b'</chdbids>')[1]
         try:
-            etree_content = etree.fromstring(record)
+            etree_content = {x.tag: x.text for x in etree.fromstring(record)}
         except Exception as err:
-            etree_content = etree.fromstring(record.decode('cp1252'))
+            etree_content = {x.tag: x.text for x in etree.fromstring(record.decode('cp1252'))}
         full_content.append(etree_content)
     return full_content
 
