@@ -25,7 +25,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added parsing check to decode responses in cp1252 if decoding in utf8 fails">
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added option to use the table # or 'application' label for table dicts in generateTableDict">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
@@ -39,16 +39,8 @@
     <option name="PATCH_PATH" value="" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_BRANCH_BY_REPOSITORY">
-      <map>
-        <entry key="$PROJECT_DIR$" value="master" />
-      </map>
-    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/setup.py" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/quickbase/__init__.py" root0="FORCE_HIGHLIGHTING" />
+    <option name="UPDATE_TYPE" value="MERGE" />
   </component>
   <component name="JupyterTrust" id="6102fa2a-8e3b-4928-b0b5-5581ae396354" />
   <component name="ProjectId" id="1TWOs1tFDMrKDiqJpQbcyecncSZ" />
@@ -62,13 +54,14 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="full.screen.before.presentation.mode" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$USER_HOME$/PycharmProjects/event_stream" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
     <property name="node.js.path.for.package.tslint" value="project" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="recentsLimit" value="5" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
@@ -78,19 +71,6 @@
     </key>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="PyLettuceRunConfigurationType" factoryName="Lettuce">
-      <module name="EmailLists" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="ADDITIONAL_ARGS" value="" />
-      <method v="2" />
-    </configuration>
     <configuration default="true" type="tests" factoryName="Attests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -132,6 +112,19 @@
       <method v="2" />
     </configuration>
     <configuration default="true" type="PyBehaveRunConfigurationType" factoryName="Behave">
+      <module name="EmailLists" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="ADDITIONAL_ARGS" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PyLettuceRunConfigurationType" factoryName="Lettuce">
       <module name="EmailLists" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -262,26 +255,6 @@
       <workItem from="1613671109499" duration="1381000" />
       <workItem from="1619115922847" duration="795000" />
       <workItem from="1619117784193" duration="2965000" />
-      <workItem from="1619526528147" duration="26000" />
-      <workItem from="1619526622041" duration="54000" />
-      <workItem from="1619526916470" duration="619000" />
-      <workItem from="1619701555160" duration="35000" />
-      <workItem from="1619713634862" duration="3126000" />
-      <workItem from="1619799526922" duration="1265000" />
-      <workItem from="1620047698317" duration="600000" />
-      <workItem from="1620152378000" duration="603000" />
-      <workItem from="1620321466241" duration="25000" />
-      <workItem from="1620324050897" duration="2056000" />
-      <workItem from="1622221753747" duration="3591000" />
-      <workItem from="1622577919746" duration="1321000" />
-      <workItem from="1622581491536" duration="77000" />
-      <workItem from="1622581931390" duration="4670000" />
-      <workItem from="1622727802932" duration="643000" />
-      <workItem from="1623160480366" duration="83000" />
-      <workItem from="1625244920738" duration="2222000" />
-      <workItem from="1625251359602" duration="315000" />
-      <workItem from="1625252520037" duration="62000" />
-      <workItem from="1625252840445" duration="954000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -409,21 +382,7 @@
       <option name="project" value="LOCAL" />
       <updated>1613671889897</updated>
     </task>
-    <task id="LOCAL-00019" summary="Added functionality to force_utf8 to make it actually parse the XML response correctly. At most, should make it work properly when called.">
-      <created>1619800192373</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1619800192373</updated>
-    </task>
-    <task id="LOCAL-00020" summary="Added parsing check to decode responses in cp1252 if decoding in utf8 fails">
-      <created>1622578003622</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1622578003622</updated>
-    </task>
-    <option name="localTasksCounter" value="21" />
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -467,27 +426,30 @@
     <MESSAGE value="Added alphanumeric conversion for GetTableFIDDict to match field name format in returned records." />
     <MESSAGE value="Same as previous but works now." />
     <MESSAGE value="Added option to use the table # or 'application' label for table dicts in generateTableDict" />
-    <MESSAGE value="Added functionality to force_utf8 to make it actually parse the XML response correctly. At most, should make it work properly when called." />
-    <MESSAGE value="Added parsing check to decode responses in cp1252 if decoding in utf8 fails" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added parsing check to decode responses in cp1252 if decoding in utf8 fails" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added option to use the table # or 'application' label for table dicts in generateTableDict" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="1060" y="455" key="FileChooserDialogImpl" timestamp="1619119582821">
+      <screen x="0" y="0" width="2560" height="1400" />
+    </state>
+    <state x="1060" y="455" key="FileChooserDialogImpl/2560.360.1920.1040/-1080.0.1080.1880/0.0.2560.1400@0.0.2560.1400" timestamp="1619119582821" />
+    <state x="872" y="433" key="Vcs.Push.Dialog.v2" timestamp="1613671892820">
+      <screen x="0" y="0" width="2560" height="1400" />
+    </state>
+    <state x="872" y="433" key="Vcs.Push.Dialog.v2/2560.360.1920.1040/-1080.0.1080.1880/0.0.2560.1400@0.0.2560.1400" timestamp="1613671892820" />
+    <state x="1097" y="614" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1619116021145">
+      <screen x="0" y="0" width="2560" height="1400" />
+    </state>
+    <state x="1097" y="614" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/2560.360.1920.1040/-1080.0.1080.1880/0.0.2560.1400@0.0.2560.1400" timestamp="1619116021145" />
+    <state x="1097" y="614" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/2560.369.1920.1040/0.0.2560.1400@0.0.2560.1400" timestamp="1610988439459" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>500</line>
+          <line>476</line>
           <option name="timeStamp" value="2" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>491</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>414</line>
-          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
