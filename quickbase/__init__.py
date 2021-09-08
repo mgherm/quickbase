@@ -7,6 +7,7 @@ __author__ = 'Herman'
 import urllib.request, urllib.parse
 import datetime, time
 import xml.etree.ElementTree as etree
+import xml
 import csv
 import smtplib
 import json
@@ -140,6 +141,7 @@ class QuickbaseAction():
         else:
             send_time_in_utc = "0"
         self.app = app
+        self.force_utf8 = force_utf8
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
@@ -393,18 +395,40 @@ class QuickbaseAction():
         self.response_object = urllib.request.urlopen(self.request) # do the thing
 
         Analytics().collect(tags={'action': self.action})
-
+        #TODO: Treat query responses as list by splitting the raw content on the "record" key!
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        self.etree_content = etree.fromstring(self.content)
+        # if self.force_utf8:
+        if self.action == "API_DoQuery":
+            self.etree_content = parseQueryContent(self.content)
+        else:
+            try:
+                self.etree_content = etree.fromstring(self.content)
+            except xml.etree.ElementTree.ParseError as err:
+                try:
+                    parser = etree.XMLParser(encoding='cp1252')
+                    self.etree_content = etree.fromstring(self.content, parser=parser)
+                except Exception as err2:
+                    try:
+                        self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                    except Exception as err3:
+                        print("triple exception caught")
+                        raise Exception(str(err3))
         if self.action == 'API_DoQueryCount':
-            self.raw_response = etree.fromstring(self.content).find('numMatches')
+            self.raw_response = etree_content.find('numMatches')
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
         elif not self.action_string == 'csv' or self.action_string == 'edit':
-            self.raw_response = etree.fromstring(self.content).findall('record')
-            self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
-            self.fid_dict = dict()
+            if type(self.etree_content) != list:
+                self.raw_response = self.etree_content.findall('record')
+                self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
+                self.fid_dict = dict()
+            else:
+                self.raw_response = list()
+                for content in self.etree_content:
+                    self.raw_response.append(content.getchildren())
+                self.response = QuickbaseResponse(self.raw_response)
+                self.fid_dict = dict()
             if not self.action_string == "add" and not self.action_string == "purge":
                 if self.clist:
                     fid_list = self.clist.split('.')
@@ -412,14 +436,14 @@ class QuickbaseAction():
                         field_list = list(self.raw_response[0])
                         counter = 0
                         for fid in fid_list:
-                            self.fid_dict[fid] = field_list[counter].tag    # map field names to field id numbers
+                            self.fid_dict[fid] = field_list[counter].tag  # map field names to field id numbers
                             counter += 1
                     except IndexError:
                         self.fid_dict = None
                 else:
                     self.fid_dict = None
                 if not self.return_records:
-                    return self.content
+                    return self.etree_content
                 else:
                     return self.raw_response
             else:
@@ -435,7 +459,7 @@ class QuickbaseAction():
                     response_dict['errdetail'] = None
                 return response_dict
         if self.action_string == 'csv' or self.action_string == 'edit':
-            resp = etree.fromstring(self.content)
+            resp = self.etree_content
             if resp.find('num_recs_input') is not None: # records received from the query
                 self.num_recs_input = resp.find('num_recs_input').text
             else:
@@ -449,14 +473,14 @@ class QuickbaseAction():
             else:
                 self.num_recs_updated = "0"
             self.rid_list = list()
-            rids = etree.fromstring(self.content).find('rids')  # record id numbers
+            rids = self.etree_content.find('rids')  # record id numbers
             try:
                 for rid in rids.findall('rid'):
                     self.rid_list.append(rid.text)
                 return self.rid_list
             except AttributeError as err:
                 print(err)
-                print(self.content)
+                print(self.etree_content)
 
 
 class QuickbaseResponse():
@@ -512,6 +536,21 @@ class UTC(datetime.tzinfo):
     def tzname(self, dt):
         return "UTC"
 
+def parseQueryContent(content):
+    records = content.split(b'</record>')
+    full_content = list()
+    for record in records:
+        if not b'<record>' in record:
+            continue
+        record += b'</record>'
+        if b'</chdbids>' in record:
+            record = record.split(b'</chdbids>')[1]
+        try:
+            etree_content = etree.fromstring(record)
+        except Exception as err:
+            etree_content = etree.fromstring(record.decode('cp1252'))
+        full_content.append(etree_content)
+    return full_content
 
 def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
     """
@@ -543,7 +582,11 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
     alphanumeric_regex = re.compile('\W')
     if status == 200:
         response_content = response.read().replace(b'<BR/>', b'')
-        fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
+        try:
+            fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
+        except xml.etree.ElementTree.ParseError:
+            parser = etree.XMLParser(encoding='cp1252')
+            fields = etree.fromstring(response_content, parser=parser).find('table').find('fields').findall('field')
         for field in fields:
             field_name = field.find('label').text
             field_id = field.attrib['id']
@@ -619,7 +662,11 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     if not returnRecords:
         return content
     else:
-        return etree.fromstring(content).findall('record')
+        try:
+            return etree.fromstring(content).findall('record')
+        except xml.etree.ElementTree.ParseError:
+            parser = etree.XMLParser(encoding='cp1252')
+            return etree.fromstring(content, parser=parser).findall('record')
 
 
 def QBAdd(url, ticket, dbid, fieldValuePairs):
