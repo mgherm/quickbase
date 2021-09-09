@@ -419,7 +419,7 @@ class QuickbaseAction():
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
         elif not self.action_string == 'csv' or self.action_string == 'edit':
-            if type(self.etree_content) == list and type(self.etree_content[0]) == dict:
+            if len(self.etree_content) != 0 and type(self.etree_content) == list and type(self.etree_content[0]) == dict:
                 try:
                     self.raw_response = etree.fromstring(self.content).findall('record')
                 except:
@@ -437,7 +437,7 @@ class QuickbaseAction():
                     self.raw_response.append(content.getchildren())
                 self.response = QuickbaseResponse(self.raw_response)
             if not self.action_string == "add" and not self.action_string == "purge":
-                if self.clist:
+                if self.clist and len(self.response.values) != 0:
                     fid_list = self.clist.split('.')
                     try:
                         field_list = [x for x in self.response.values[0]]

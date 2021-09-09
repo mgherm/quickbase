@@ -16,8 +16,9 @@ def generate_quickbase_app(file='CIC.cfg'):
 
 if __name__ == '__main__':
     app = generate_quickbase_app()
-    query = "query={3.EX.'93'}"
-    clist = '1.2.3.4.5.6.7.8.9'
-    r = quickbase.QuickbaseAction(app, 'clients', 'query', query=query, clist=clist)
-    s = r.performAction()
-    print(r)
+
+    # query = "query={3.EX.'93'}"
+    # clist = '1.2.3.4.5.6.7.8.9'
+    # r = quickbase.QuickbaseAction(app, 'clients', 'query', query=query, clist=clist)
+    # s = r.performAction()
+    # print(r)
