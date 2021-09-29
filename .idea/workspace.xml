@@ -31,7 +31,6 @@
     <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Added parsing check to decode responses in cp1252 if decoding in utf8 fails">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/quickbase/action_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/action_test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -74,7 +73,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="full.screen.before.presentation.mode" value="false" />
-    <property name="last_opened_file_path" value="$USER_HOME$/PycharmProjects/DynamicQuickbaseRobot" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../coverified_test" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -308,6 +307,11 @@
       <workItem from="1619117784193" duration="2965000" />
       <workItem from="1631128217505" duration="2878000" />
       <workItem from="1631207397070" duration="3703000" />
+      <workItem from="1631904106219" duration="19000" />
+      <workItem from="1632164987570" duration="834000" />
+      <workItem from="1632840671189" duration="96000" />
+      <workItem from="1632923060386" duration="44000" />
+      <workItem from="1632938375542" duration="820000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -486,12 +490,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/action_test.py</url>
-          <line>23</line>
+          <line>24</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/action_test.py</url>
-          <line>22</line>
+          <line>23</line>
           <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>
