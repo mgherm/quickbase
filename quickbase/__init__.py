@@ -490,7 +490,7 @@ class QuickbaseAction():
                 """ % (self.send_time_in_utc, self.app.ticket, csv_lines, self.clist, self.skip_first)
         elif type(self.data) == dict:  # dicts are preferred for editing existing records. Dict key is record ID
             csv_lines = ""
-            assert '3' in clist.split('.')
+            assert '3' in self.clist.split('.')
             for record_id in self.data:
                 assert type(record_id) == str and type(self.data[record_id]) == list
                 line = self.data[record_id]
