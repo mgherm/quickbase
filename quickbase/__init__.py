@@ -125,7 +125,7 @@ class QuickbaseAction():
     also contain any response from Quickbase
     """
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False):
+                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False, custom_body=None):
         """
 
         :param app: class QuickbaseApp
@@ -136,28 +136,36 @@ class QuickbaseAction():
         """
 
         if time_in_utc:
-            send_time_in_utc = "1"
+            self.send_time_in_utc = "1"
         else:
-            send_time_in_utc = "0"
+            self.send_time_in_utc = "0"
         self.app = app
+        self.force_utf8 = force_utf8
+        self.skip_first = skip_first
+
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
             self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower() # assign the correct Quickbase API command based on the action string
-        if action.lower() == "query" or action.lower() == 'qid' or action.lower() == 'qname':
+        if self.action_string in ["query", "qid", "qname", "querycount"]:
             self.action = "API_DoQuery"
-        elif action.lower() == "add":
+            if self.action_string == 'querycount':
+                self.action = "API_DoQueryCount"
+                self.action_string = "query"
+        elif self.action_string == "add":
             self.action = "API_AddRecord"
-        elif action.lower() == "edit" or action.lower() == "csv":
+        elif self.action_string == "edit" or action.lower() == "csv":
             self.action = "API_ImportFromCSV"
-        elif action.lower() == "purge":
+        elif self.action_string == "purge":
             self.action = "API_PurgeRecords"
-        elif action.lower() == "variable":
+        elif self.action_string == "variable":
             self.action = "API_SetDBVar"
-        elif action.lower() == "querycount":
-            self.action = "API_DoQueryCount"
-            self.action_string = "query"
+        # elif self.action_string == "querycount":
+        #     self.action = "API_DoQueryCount"
+        #     self.action_string = "query"
+        else:
+            self.action = action
         self.request.add_header("Content-Type", "application/xml")
         self.request.add_header("QUICKBASE-ACTION", self.action)
         self.return_records = return_records    # return the records from the response, or the response itself
@@ -176,204 +184,24 @@ class QuickbaseAction():
                 self.action_string == "qid" or \
                 self.action_string == 'qname' or \
                 self.action_string == 'querycount':
-            encoding = '<encoding>utf-8</encoding>' if force_utf8 else ''
-            if self.query:  # build the query request
-                if "query=" in self.query or "qid=" in self.query or "qname=" in self.query:
-                    v, self.query = self.query.split("=", 1)
-                if self.slist == "0":
-                    self.data = """
-                        <qdbapi>
-                            %s
-                            <ticket>%s</ticket>
-                            <%s>%s</%s>
-                            """ % (encoding, self.app.ticket, self.action_string, self.query, self.action_string)
-                    if clist:
-                        self.data = self.data + """<clist>%s</clist>
-                        """ % (self.clist)
-
-                else:
-                    self.data = """
-                        <qdbapi>
-                            %s
-                            <ticket>%s</ticket>
-                            <%s>%s</%s>
-                            """% (encoding, self.app.ticket, self.action_string, self.query, self.action_string)
-                    if clist:
-                        self.data = self.data + """<clist>%s</clist>
-                        """ % (self.clist)
-                    self.data = self.data + """<slist>%s</slist>
-                        """ % (self.slist)
-            else:   # queries with an empty query string are allowed and should return all records from the table
-                if self.slist == "0":
-                    self.data = """
-                        <qdbapi>
-                            %s
-                            <ticket>%s</ticket>
-                            """% (encoding, self.app.ticket)
-                    if clist:
-                        self.data = self.data + """<clist>%s</clist>
-                        """ % (self.clist)
-                else:
-                    self.data = """
-                        <qdbapi>
-                            %s
-                            <ticket>%s</ticket>
-                            """ % (encoding, self.app.ticket)
-                    if clist:
-                        self.data = self.data + """<clist>%s</clist>
-                        """ % (self.clist)
-                    self.data = self.data + """<slist>%s</slist>
-                        """ % (self.slist)
+            self.buildQuery()
         elif self.action_string == "purge": # purge removes all matching records and should be used with caution
-            if not confirmation:
-                return "Purge requires confirmation."
-            if not self.query:
-                return "Purging without a query will delete all records, and is disabled."  # use qid=1 instead
-            if confirmation and self.query:
-                if "query=" in self.query:
-                    v, self.query = self.query.split("=", 1)
-                    query_type = "query"
-                elif "qid=" in self.query:
-                    v, self.query = self.query.split("=", 1)
-                    query_type = "qid"
-                else:
-                    query_type = "query"
-                self.data = """
-                    <qdbapi>
-                        <ticket>%s</ticket>
-                        <%s>%s</%s>
-                    """ % (self.app.ticket, query_type, self.query, query_type)
+            self.confirmation = confirmation
+            self.buildPurge()
         elif self.action_string == "add":   # add a single record
-            assert type(self.data) == dict
-            recordInfo = ""
-            for field in self.data:
-                recordInfo += '<field fid="' + str(field) + '">' + str(self.data[field]) + "</field>\n"
-            self.data = """
-                <qdbapi>
-                    <msInUTC>%s</msInUTC>
-                    <ticket>%s</ticket>
-                    %s
-
-                """ % (send_time_in_utc, self.app.ticket, recordInfo)
+            self.buildAdd()
         elif self.action_string == "edit" or self.action_string == "csv":   # it is easy enough to edit records using
                                                                             # the csv method.
-            if type(self.data) == str:  # data can be type string, list or dict
-                if '"' in self.data:
-                    self.data = self.data.replace('"', '""')    # Quickbase requires double quotes for quotes within
-                    self.data = '"' + self.data + '"'           # data
-                elif "," in self.data:  # commas are special characters so strings containing them need to be quoted
-                    self.data = '"' + self.data + '"'
-                if '\n' in self.data and not (self.data[0] == '"' and self.data[-1] == '"'):    # \n is also a special
-                    self.data = '"' + self.data + '"'                                           # character
-                self.data = """
-                <qdbapi>
-                    <msInUTC>%s</msInUTC>
-                    <ticket>%s</ticket>
-                    <records_csv>
-                        <![CDATA[
-                            %s
-                        ]]>
-                    </records_csv>
-                    <clist>%s</clist>
-                    <skipfirst>%s</skipfirst>
+            self.buildCSV()
 
-                    """ % (send_time_in_utc, self.app.ticket, self.data, self.clist, skip_first)
-            elif type(self.data) == list:
-                csv_lines = ""
-                if type(self.data[0]) == list:  # a list of lists works as well
-                    for line in self.data:
-                        for item in line:
-                            if item is None:    # quickbase chokes unless None is converted to an empty string
-                                item = ''
-                            assert type(item) == str
-                            if '"' in item:
-                                item = item.replace('"', '""')
-                                item = '"' + item + '"'
-                            elif "," in item:
-                                item = '"' + item + '"'
-                            if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
-                                item = '"' + item + '"'
-                            csv_lines += item + ","
-                        csv_lines = csv_lines[:-1] + "\n"
-                elif type(self.data[0]) == str:
-                    for item in self.data:
-                        if item is None:
-                            item = ''
-                        try:
-                            assert type(item) == str
-                        except AssertionError:
-                            print("wrong item type")
-                            print(type(item))
-                            print(item)
-                            if item is None:    # quickbase chokes unless None is converted to an empty string
-                                item = ""
-                        if '"' in item:
-                            item = item.replace('"', '""')
-                            item = '"' + item + '"'
-                        elif "," in item:
-                            item = '"' + item + '"'
-                        if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
-                            item = '"' + item + '"'
-                        csv_lines += item + ","
-                    csv_lines = csv_lines[:-1] + "\n"
-                self.data = """
-                <qdbapi>
-                    <msInUTC>%s</msInUTC>
-                    <ticket>%s</ticket>
-                    <records_csv>
-                        <![CDATA[
-                            %s
-                        ]]>
-                    </records_csv>
-                    <clist>%s</clist>
-                    <skipfirst>%s</skipfirst>
-
-                    """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, skip_first)
-            elif type(self.data) == dict:   # dicts are preferred for editing existing records
-                csv_lines = ""
-                for record_id in self.data:
-                    assert type(record_id) == str and type(self.data[record_id]) == list
-                    line = self.data[record_id]
-                    csv_lines += record_id + ','
-                    for item in line:
-                        if item is None:    # quickbase chokes unless None is converted to an empty string
-                            item = ''
-                        assert type(item) == str
-                        if '"' in item:
-                            item = item.replace('"', '""')
-                            item = '"' + item + '"'
-                        elif "," in item:
-                            item = '"' + item + '"'
-                        if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
-                            item = '"' + item + '"'
-                        csv_lines += item + ","
-                    csv_lines = csv_lines[:-1] + "\n"
-                self.data = """
-                <qdbapi>
-                    <msInUTC>%s</msInUTC>
-                    <ticket>%s</ticket>
-                    <records_csv>
-                        <![CDATA[
-                            %s
-                        ]]>
-                    </records_csv>
-                    <clist>%s</clist>
-                    <skipfirst>%s</skipfirst>
-
-                    """ % (send_time_in_utc, self.app.ticket, csv_lines, self.clist, "0")
         elif self.action_string == "variable":
-            assert type(self.data) == dict
-            assert len(self.data) == 1
-            for variable in self.data:
-                variable_name = variable
-                variable_value = self.data[variable]
-                self.data = """
-                    <qdbapi>
-                        <msInUTC>%s</msInUTC>
-                        <ticket>%s</ticket>
-                        <varname>%s</varname>
-                        <value>%s</value>
-                    """ % (send_time_in_utc, self.app.ticket, variable_name, variable_value)
+            self.buildVariable()
+
+        else:   # implies an action not otherwise handled
+            self.data = """
+            <qdbapi>
+                %s""" % custom_body
+
         if options is not None:
             self.options = options  # custom options
             self.data = self.data + """
@@ -393,29 +221,59 @@ class QuickbaseAction():
         self.response_object = urllib.request.urlopen(self.request) # do the thing
 
         Analytics().collect(tags={'action': self.action})
-
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        self.etree_content = etree.fromstring(self.content)
+        # if self.force_utf8:
+        if self.action == "API_DoQuery":
+            self.etree_content = parseQueryContent(self.content)
+        else:
+            try:
+                self.etree_content = etree.fromstring(self.content)
+            except xml.etree.ElementTree.ParseError as err:
+                try:
+                    parser = etree.XMLParser(encoding='cp1252')
+                    self.etree_content = etree.fromstring(self.content, parser=parser)
+                except Exception as err2:
+                    try:
+                        self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                    except Exception as err3:
+                        print("triple exception caught")
+                        raise Exception(str(err3))
+        self.fid_dict = dict()
         if self.action == 'API_DoQueryCount':
-            self.raw_response = etree.fromstring(self.content).find('numMatches')
+            self.raw_response = self.etree_content.find('numMatches')
             self.response = QuickbaseResponse(self.raw_response)
             return self.raw_response.text
-        elif not self.action_string == 'csv' or self.action_string == 'edit':
-            self.raw_response = etree.fromstring(self.content).findall('record')
-            self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
-            self.fid_dict = dict()
+        elif self.action_string != 'csv':
+            if len(self.etree_content) != 0 and \
+                    type(self.etree_content) == list and \
+                    type(self.etree_content[0]) == dict:
+                try:
+                    self.raw_response = etree.fromstring(self.content).findall('record')
+                except:
+                    self.raw_response = None
+                self.response = QuickbaseResponse([])
+                self.response.values = self.etree_content
+                self.response.records = self.content
+            elif type(self.etree_content) != list:
+                self.raw_response = self.etree_content.findall('record')
+                self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
+            else:
+                self.raw_response = list()
+                for content in self.etree_content:
+                    self.raw_response.append(content.getchildren())
+                self.response = QuickbaseResponse(self.raw_response)
             if not self.action_string == "add" and not self.action_string == "purge":
-                if self.clist:
+                if self.clist and len(self.response.values) != 0:
                     fid_list = self.clist.split('.')
                     try:
-                        field_list = list(self.raw_response[0])
+                        field_list = [x for x in self.response.values[0]]
                         counter = 0
                         for fid in fid_list:
-                            self.fid_dict[fid] = field_list[counter].tag    # map field names to field id numbers
+                            self.fid_dict[fid] = field_list[counter]  # map field names to field id numbers
                             counter += 1
                     except IndexError:
-                        self.fid_dict = None
+                        self.fid_dict[fid] = None   #CAUTION: Quickbase will not tell you if you include an invalid field ID in a clist!
                 else:
                     self.fid_dict = None
                 if not self.return_records:
@@ -458,6 +316,211 @@ class QuickbaseAction():
                 print(err)
                 print(self.content)
 
+    def buildQuery(self):
+        encoding = '<encoding>utf-8</encoding>' if self.force_utf8 else ''
+        if self.query:  # build the query request
+            if "query=" in self.query or "qid=" in self.query or "qname=" in self.query:
+                v, self.query = self.query.split("=", 1)
+            if self.slist == "0":   # sort the responses on the listed field IDs
+                self.data = """
+                                <qdbapi>
+                                    %s
+                                    <ticket>%s</ticket>
+                                    <%s>%s</%s>
+                                    """ % (
+                encoding, self.app.ticket, self.action_string, self.query, self.action_string)
+                if clist:
+                    self.data = self.data + """<clist>%s</clist>
+                                """ % (self.clist)
+
+            else:   # responses sorted by the default field
+                self.data = """
+                                <qdbapi>
+                                    %s
+                                    <ticket>%s</ticket>
+                                    <%s>%s</%s>
+                                    """ % (
+                encoding, self.app.ticket, self.action_string, self.query, self.action_string)
+                if self.clist:
+                    self.data = self.data + """<clist>%s</clist>
+                                """ % (self.clist)
+                self.data = self.data + """<slist>%s</slist>
+                                """ % (self.slist)
+
+        else:  # queries with an empty query string are allowed and should return all records from the table
+            if self.slist == "0":
+                self.data = """
+                                <qdbapi>
+                                    %s
+                                    <ticket>%s</ticket>
+                                    """ % (encoding, self.app.ticket)
+                if clist:
+                    self.data = self.data + """<clist>%s</clist>
+                                """ % (self.clist)
+            else:
+                self.data = """
+                                <qdbapi>
+                                    %s
+                                    <ticket>%s</ticket>
+                                    """ % (encoding, self.app.ticket)
+                if clist:
+                    self.data = self.data + """<clist>%s</clist>
+                                """ % (self.clist)
+                self.data = self.data + """<slist>%s</slist>
+                                """ % (self.slist)
+
+    def buildAdd(self):
+        assert type(self.data) == dict
+        recordInfo = ""
+        for field in self.data:
+            recordInfo += '<field fid="' + str(field) + '">' + str(self.data[field]) + "</field>\n"
+        self.data = """
+                        <qdbapi>
+                            <msInUTC>%s</msInUTC>
+                            <ticket>%s</ticket>
+                            %s
+
+                        """ % (self.send_time_in_utc, self.app.ticket, recordInfo)
+
+    def buildPurge(self):
+        assert self.confirmation
+        assert self.query # use qid=1 instead
+        if self.confirmation and self.query:
+            if "query=" in self.query:
+                v, self.query = self.query.split("=", 1)
+                query_type = "query"
+            elif "qid=" in self.query:
+                v, self.query = self.query.split("=", 1)
+                query_type = "qid"
+            else:
+                query_type = "query"
+            self.data = """
+                           <qdbapi>
+                               <ticket>%s</ticket>
+                               <%s>%s</%s>
+                           """ % (self.app.ticket, query_type, self.query, query_type)
+        return None
+
+    def buildVariable(self):
+        assert type(self.data) == dict
+        assert len(self.data) == 1
+        for variable in self.data:
+            variable_name = variable
+            variable_value = self.data[variable]
+            self.data = """
+                            <qdbapi>
+                                <msInUTC>%s</msInUTC>
+                                <ticket>%s</ticket>
+                                <varname>%s</varname>
+                                <value>%s</value>
+                            """ % (self.send_time_in_utc, self.app.ticket, variable_name, variable_value)
+
+    def buildCSV(self):
+        if type(self.data) == str:  # data can be type string, list or dict
+            if '"' in self.data:
+                self.data = self.data.replace('"', '""')  # Quickbase requires double quotes for quotes within
+                self.data = '"' + self.data + '"'  # data
+            elif "," in self.data:  # commas are special characters so strings containing them need to be quoted
+                self.data = '"' + self.data + '"'
+            if '\n' in self.data and not (self.data[0] == '"' and self.data[-1] == '"'):  # \n is also a special
+                self.data = '"' + self.data + '"'  # character
+            self.data = """
+            <qdbapi>
+                <msInUTC>%s</msInUTC>
+                <ticket>%s</ticket>
+                <records_csv>
+                    <![CDATA[
+                        %s
+                    ]]>
+                </records_csv>
+                <clist>%s</clist>
+                <skipfirst>%s</skipfirst>
+
+                """ % (self.send_time_in_utc, self.app.ticket, self.data, self.clist, self.skip_first)
+        elif type(self.data) == list:
+            csv_lines = ""
+            if type(self.data[0]) == list:  # a list of lists works as well
+                for line in self.data:
+                    for item in line:
+                        if item is None:  # quickbase chokes unless None is converted to an empty string
+                            item = ''
+                        assert type(item) == str
+                        if '"' in item:
+                            item = item.replace('"', '""')
+                            item = '"' + item + '"'
+                        elif "," in item:
+                            item = '"' + item + '"'
+                        if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
+                            item = '"' + item + '"'
+                        csv_lines += item + ","
+                    csv_lines = csv_lines[:-1] + "\n"
+            elif type(self.data[0]) == str:
+                for item in self.data:
+                    if item is None:
+                        item = ''
+                    try:
+                        assert type(item) == str
+                    except AssertionError:
+                        print("wrong item type")
+                        print(type(item))
+                        print(item)
+                        if item is None:  # quickbase chokes unless None is converted to an empty string
+                            item = ""
+                    if '"' in item:
+                        item = item.replace('"', '""')
+                        item = '"' + item + '"'
+                    elif "," in item:
+                        item = '"' + item + '"'
+                    if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
+                        item = '"' + item + '"'
+                    csv_lines += item + ","
+                csv_lines = csv_lines[:-1] + "\n"
+            self.data = """
+            <qdbapi>
+                <msInUTC>%s</msInUTC>
+                <ticket>%s</ticket>
+                <records_csv>
+                    <![CDATA[
+                        %s
+                    ]]>
+                </records_csv>
+                <clist>%s</clist>
+                <skipfirst>%s</skipfirst>
+
+                """ % (self.send_time_in_utc, self.app.ticket, csv_lines, self.clist, self.skip_first)
+        elif type(self.data) == dict:  # dicts are preferred for editing existing records. Dict key is record ID
+            csv_lines = ""
+            assert '3' in self.clist.split('.')
+            for record_id in self.data:
+                assert type(record_id) == str and type(self.data[record_id]) == list
+                line = self.data[record_id]
+                csv_lines += record_id + ','
+                for item in line:
+                    if item is None:  # quickbase chokes unless None is converted to an empty string
+                        item = ''
+                    assert type(item) == str
+                    if '"' in item:
+                        item = item.replace('"', '""')
+                        item = '"' + item + '"'
+                    elif "," in item:
+                        item = '"' + item + '"'
+                    if '\n' in item and not (item[0] == '"' and item[-1] == '"'):
+                        item = '"' + item + '"'
+                    csv_lines += item + ","
+                csv_lines = csv_lines[:-1] + "\n"
+            self.data = """
+            <qdbapi>
+                <msInUTC>%s</msInUTC>
+                <ticket>%s</ticket>
+                <records_csv>
+                    <![CDATA[
+                        %s
+                    ]]>
+                </records_csv>
+                <clist>%s</clist>
+                <skipfirst>%s</skipfirst>
+
+                """ % (self.send_time_in_utc, self.app.ticket, csv_lines, self.clist, "0")
 
 class QuickbaseResponse():
     """
@@ -511,6 +574,22 @@ class UTC(datetime.tzinfo):
 
     def tzname(self, dt):
         return "UTC"
+
+def parseQueryContent(content):
+    records = content.split(b'</record>')
+    full_content = list()
+    for record in records:
+        if not b'<record>' in record:
+            continue
+        record += b'</record>'
+        if b'</chdbids>' in record:
+            record = record.split(b'</chdbids>')[1]
+        try:
+            etree_content = {x.tag: x.text for x in etree.fromstring(record)}
+        except Exception as err:
+            etree_content = {x.tag: x.text for x in etree.fromstring(record.decode('cp1252'))}
+        full_content.append(etree_content)
+    return full_content
 
 
 def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
