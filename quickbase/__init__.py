@@ -7,7 +7,6 @@ __author__ = 'Herman'
 import urllib.request, urllib.parse
 import datetime, time
 import xml.etree.ElementTree as etree
-import xml
 import csv
 import smtplib
 import json
@@ -143,6 +142,7 @@ class QuickbaseAction():
         self.app = app
         self.force_utf8 = force_utf8
         self.skip_first = skip_first
+
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
@@ -277,7 +277,7 @@ class QuickbaseAction():
                 else:
                     self.fid_dict = None
                 if not self.return_records:
-                    return self.etree_content
+                    return self.content
                 else:
                     return self.raw_response
             else:
@@ -293,7 +293,7 @@ class QuickbaseAction():
                     response_dict['errdetail'] = None
                 return response_dict
         if self.action_string == 'csv' or self.action_string == 'edit':
-            resp = self.etree_content
+            resp = etree.fromstring(self.content)
             if resp.find('num_recs_input') is not None: # records received from the query
                 self.num_recs_input = resp.find('num_recs_input').text
             else:
@@ -307,14 +307,14 @@ class QuickbaseAction():
             else:
                 self.num_recs_updated = "0"
             self.rid_list = list()
-            rids = self.etree_content.find('rids')  # record id numbers
+            rids = etree.fromstring(self.content).find('rids')  # record id numbers
             try:
                 for rid in rids.findall('rid'):
                     self.rid_list.append(rid.text)
                 return self.rid_list
             except AttributeError as err:
                 print(err)
-                print(self.etree_content)
+                print(self.content)
 
     def buildQuery(self):
         encoding = '<encoding>utf-8</encoding>' if self.force_utf8 else ''
@@ -591,6 +591,7 @@ def parseQueryContent(content):
         full_content.append(etree_content)
     return full_content
 
+
 def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
     """
     Uses API_GetSchema to generate a dict of FIDs by field name. Note that the responses here include a lot of extra
@@ -621,11 +622,7 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
     alphanumeric_regex = re.compile('\W')
     if status == 200:
         response_content = response.read().replace(b'<BR/>', b'')
-        try:
-            fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
-        except xml.etree.ElementTree.ParseError:
-            parser = etree.XMLParser(encoding='cp1252')
-            fields = etree.fromstring(response_content, parser=parser).find('table').find('fields').findall('field')
+        fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
         for field in fields:
             field_name = field.find('label').text
             field_id = field.attrib['id']
@@ -701,11 +698,7 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     if not returnRecords:
         return content
     else:
-        try:
-            return etree.fromstring(content).findall('record')
-        except xml.etree.ElementTree.ParseError:
-            parser = etree.XMLParser(encoding='cp1252')
-            return etree.fromstring(content, parser=parser).findall('record')
+        return etree.fromstring(content).findall('record')
 
 
 def QBAdd(url, ticket, dbid, fieldValuePairs):
