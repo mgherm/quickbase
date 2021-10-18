@@ -354,7 +354,7 @@ class QuickbaseAction():
                                     %s
                                     <ticket>%s</ticket>
                                     """ % (encoding, self.app.ticket)
-                if clist:
+                if self.clist:
                     self.data = self.data + """<clist>%s</clist>
                                 """ % (self.clist)
             else:
@@ -363,7 +363,7 @@ class QuickbaseAction():
                                     %s
                                     <ticket>%s</ticket>
                                     """ % (encoding, self.app.ticket)
-                if clist:
+                if self.clist:
                     self.data = self.data + """<clist>%s</clist>
                                 """ % (self.clist)
                 self.data = self.data + """<slist>%s</slist>
