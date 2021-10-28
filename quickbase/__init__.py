@@ -744,9 +744,9 @@ def EpochToDate(epochTime, include_time=False, convert_to_eastern_time=False):
     elif epochTime and include_time:
         tupleTime = time.gmtime(int(epochTime) / 1000)
         realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
-                                         tupleTime.tm_min, tupleTime.tm_sec, tzinfo=UTC())
+                                         tupleTime.tm_min, tupleTime.tm_sec, tzinfo=pytz.UTC)
         if convert_to_eastern_time:
-            realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
+            realDateTime = realDateTime.astimezone(tz=pytz.timezone('EST'))
         # realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
         return realDateTime
     else:
@@ -761,9 +761,9 @@ def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
     """
 
     if not include_time:
-        date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=UTC())
+        date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=pytz.UTC)
         if convert_to_eastern_time:
-            utc_date_object = date_object.astimezone(tz=Eastern_tzinfo())
+            utc_date_object = date_object.astimezone(tz=pytz.timezone('EST'))
             # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
             #                            str(date_object.tzinfo),
             #                            "%Y%m%d %Z")
@@ -772,9 +772,9 @@ def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
             epochTime = int(time.mktime(date_object.timetuple()) * 1000)
     else:
         datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
-                                            regDate.second, tzinfo=UTC())
+                                            regDate.second, tzinfo=pytz.UTC)
         if convert_to_eastern_time:
-            utc_datetime_object = datetime_object.astimezone(tz=Eastern_tzinfo())
+            utc_datetime_object = datetime_object.astimezone(tz=pytz.timezone('EST'))
             # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
             #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
             #                            + str(date_object.second) + " " + str(date_object.tzinfo),
