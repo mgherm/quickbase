@@ -28,13 +28,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Tried to streamline the QuickbaseAction object so it makes more sense. Added some documentation. Hopefully squashed the bug in the new by-record parser.">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/quickbase/action_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/action_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-    </list>
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Switched out the custom tz objects because they were fucking with the salto robot" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -361,7 +355,7 @@
       <workItem from="1632923060386" duration="44000" />
       <workItem from="1632938375542" duration="820000" />
       <workItem from="1635384142125" duration="833000" />
-      <workItem from="1635387828132" duration="1688000" />
+      <workItem from="1635387828132" duration="2375000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -489,7 +483,14 @@
       <option name="project" value="LOCAL" />
       <updated>1613671889897</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Switched out the custom tz objects because they were fucking with the salto robot">
+      <created>1635390208456</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1635390208456</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -533,7 +534,8 @@
     <MESSAGE value="Added alphanumeric conversion for GetTableFIDDict to match field name format in returned records." />
     <MESSAGE value="Same as previous but works now." />
     <MESSAGE value="Added option to use the table # or 'application' label for table dicts in generateTableDict" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added option to use the table # or 'application' label for table dicts in generateTableDict" />
+    <MESSAGE value="Switched out the custom tz objects because they were fucking with the salto robot" />
+    <option name="LAST_COMMIT_MESSAGE" value="Switched out the custom tz objects because they were fucking with the salto robot" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
