@@ -592,7 +592,32 @@ def parseQueryContent(content):
     return full_content
 
 
-def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
+def parseSchemaContent(content, include_field_details=False):
+    field_section = content.split(b'<fields>')[1]
+    fields = field_section.split(b'</field>')
+    full_content = dict()
+    for field in fields:
+        if not b'<field' in field:
+            continue
+        field += b'</field>'
+        try:
+            field_string = etree.fromstring(field)
+        except Exception as err:
+            field_string = etree.fromstring(field.decode('cp1252'))
+        field_id = field_string.attrib['id']
+        field_details = {x.tag: x.text for x in field_string}
+        if include_field_details:
+            field_details['field_type'] = field_string.attrib['field_type']
+            field_details['id'] = field_id
+            if 'mode' in field_string.attrib:
+                field_details['field_mode'] = field_string.attrib['mode']
+            full_content[field_details['label']] = field_details
+        else:
+            full_content[field_details['label']] = field_id
+    return full_content
+
+
+def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True, return_field_details=False):
     """
     Uses API_GetSchema to generate a dict of FIDs by field name. Note that the responses here include a lot of extra
     information and generate a large (up to 1MB or more for some tables) response. This module should only be run as
@@ -622,15 +647,14 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
     alphanumeric_regex = re.compile('\W')
     if status == 200:
         response_content = response.read().replace(b'<BR/>', b'')
-        fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
-        for field in fields:
-            field_name = field.find('label').text
-            field_id = field.attrib['id']
-            if return_standard:
-                field_dict[field_name] = field_id
-            if return_alphanumeric:
-                alphanumeric_key = alphanumeric_regex.sub("_", field_name).lower()
-                field_dict[alphanumeric_key] = field_id
+        full_content = parseSchemaContent(response_content, return_field_details)
+        if return_standard:
+            for field_label in full_content:
+                field_dict[field_label] = full_content[field_label]
+        if return_alphanumeric:
+            for field_label in full_content:
+                alphanumeric_key = alphanumeric_regex.sub("_", field_label).lower()
+                field_dict[alphanumeric_key] = full_content[field_label]
     return field_dict
 
 
