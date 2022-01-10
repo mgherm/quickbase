@@ -16,15 +16,17 @@ def generate_quickbase_app(file='CIC.cfg'):
     return CIC
 
 if __name__ == '__main__':
-    app = generate_quickbase_app()
-
-    query = "query={3.EX.'93'}"
-    clist = '1.2.3.4.5.6.7.8.9'
-    # r = quickbase.QuickbaseAction(app, 'clients', 'query', query=query, clist=clist)
-    clist = '3.778.94.306.147.301.244.34.125'
-    r = quickbase.QuickbaseAction(app, 'clients', 'edit', clist=clist, data={'8060': ['Health', 'foobsdfasdfcar foasdfo', '123 abc asdfst', 'bar asdffoo', 'Client', 'rsmith@cic.com', str(quickbase.DateToEpoch(datetime.date.today())), 'Internet Search']})
-    # r = quickbase.QuickbaseAction(app, 'clients', 'querycount', query=query, clist=clist)
-    # r = quickbase.QuickbaseAction(app, 'keys', 'purge', query=query, confirmation=True)
-
-    s = r.performAction()
-    print(r)
+    r = datetime.datetime.now()
+    s = quickbase.DateToEpoch(r, include_time=True, convert_to_eastern_time=True)
+    # app = generate_quickbase_app()
+    #
+    # query = "query={3.EX.'93'}"
+    # clist = '1.2.3.4.5.6.7.8.9'
+    # # r = quickbase.QuickbaseAction(app, 'clients', 'query', query=query, clist=clist)
+    # clist = '3.778.94.306.147.301.244.34.125'
+    # r = quickbase.QuickbaseAction(app, 'clients', 'edit', clist=clist, data={'8060': ['Health', 'foobsdfasdfcar foasdfo', '123 abc asdfst', 'bar asdffoo', 'Client', 'rsmith@cic.com', str(quickbase.DateToEpoch(datetime.date.today())), 'Internet Search']})
+    # # r = quickbase.QuickbaseAction(app, 'clients', 'querycount', query=query, clist=clist)
+    # # r = quickbase.QuickbaseAction(app, 'keys', 'purge', query=query, confirmation=True)
+    #
+    # s = r.performAction()
+    # print(r)

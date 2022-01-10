@@ -592,7 +592,32 @@ def parseQueryContent(content):
     return full_content
 
 
-def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True):
+def parseSchemaContent(content, include_field_details=False):
+    field_section = content.split(b'<fields>')[1]
+    fields = field_section.split(b'</field>')
+    full_content = dict()
+    for field in fields:
+        if not b'<field' in field:
+            continue
+        field += b'</field>'
+        try:
+            field_string = etree.fromstring(field)
+        except Exception as err:
+            field_string = etree.fromstring(field.decode('cp1252'))
+        field_id = field_string.attrib['id']
+        field_details = {x.tag: x.text for x in field_string}
+        if include_field_details:
+            field_details['field_type'] = field_string.attrib['field_type']
+            field_details['id'] = field_id
+            if 'mode' in field_string.attrib:
+                field_details['field_mode'] = field_string.attrib['mode']
+            full_content[field_details['label']] = field_details
+        else:
+            full_content[field_details['label']] = field_id
+    return full_content
+
+
+def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True, return_field_details=False):
     """
     Uses API_GetSchema to generate a dict of FIDs by field name. Note that the responses here include a lot of extra
     information and generate a large (up to 1MB or more for some tables) response. This module should only be run as
@@ -622,15 +647,14 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
     alphanumeric_regex = re.compile('\W')
     if status == 200:
         response_content = response.read().replace(b'<BR/>', b'')
-        fields = etree.fromstring(response_content).find('table').find('fields').findall('field')
-        for field in fields:
-            field_name = field.find('label').text
-            field_id = field.attrib['id']
-            if return_standard:
-                field_dict[field_name] = field_id
-            if return_alphanumeric:
-                alphanumeric_key = alphanumeric_regex.sub("_", field_name).lower()
-                field_dict[alphanumeric_key] = field_id
+        full_content = parseSchemaContent(response_content, return_field_details)
+        if return_standard:
+            for field_label in full_content:
+                field_dict[field_label] = full_content[field_label]
+        if return_alphanumeric:
+            for field_label in full_content:
+                alphanumeric_key = alphanumeric_regex.sub("_", field_label).lower()
+                field_dict[alphanumeric_key] = full_content[field_label]
     return field_dict
 
 
@@ -731,56 +755,86 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     return response
 
 
-def EpochToDate(epochTime, include_time=False, convert_to_eastern_time=False):
+def EpochToDate(epochTime, include_time=False, convert_to_eastern_time=False, include_timezone=True):
     """
     Takes a Quickbase-generated time value (ms since the start of the epoch) and returns a datetime.date object
     If pulling directly from Quickbase, should be converted to eastern time
     """
-
-    if epochTime and not include_time:
-        tupleTime = time.gmtime(int(epochTime) / 1000)
-        realDate = datetime.date(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday)
-        return realDate
-    elif epochTime and include_time:
-        tupleTime = time.gmtime(int(epochTime) / 1000)
-        realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
-                                         tupleTime.tm_min, tupleTime.tm_sec, tzinfo=UTC())
-        if convert_to_eastern_time:
-            realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
-        # realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
-        return realDateTime
+    if include_timezone:
+        if epochTime and not include_time:
+            tupleTime = time.gmtime(int(epochTime) / 1000)
+            realDate = datetime.date(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday)
+            return realDate
+        elif epochTime and include_time:
+            tupleTime = time.gmtime(int(epochTime) / 1000)
+            realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
+                                             tupleTime.tm_min, tupleTime.tm_sec, tzinfo=pytz.UTC)
+            if convert_to_eastern_time:
+                realDateTime = realDateTime.astimezone(tz=pytz.timezone('US/Eastern'))
+            # realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
+            return realDateTime
+        else:
+            return None
     else:
-        return None
+        if epochTime and not include_time:
+            tupleTime = time.gmtime(int(epochTime) / 1000)
+            realDate = datetime.date(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday)
+            return realDate
+        elif epochTime and include_time:
+            tupleTime = time.gmtime(int(epochTime) / 1000)
+            realDateTime = datetime.datetime(tupleTime.tm_year, tupleTime.tm_mon, tupleTime.tm_mday, tupleTime.tm_hour,
+                                             tupleTime.tm_min, tupleTime.tm_sec)
+            # if convert_to_eastern_time:
+            #     realDateTime = realDateTime.astimezone(tz=pytz.timezone('US/Eastern'))
+            # realDateTime = realDateTime.astimezone(tz=Eastern_tzinfo())
+            return realDateTime
+        else:
+            return None
 
 
-def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False):
+def DateToEpoch(regDate, include_time=False, convert_to_eastern_time=False, include_timezone=True):
     """
     takes a datetime object and returns an epoch time integer in a format that
     quickbase can use. Assumes time in localtime and does necessary alterations to make it work with UTC if
     convert_to_eastern_time is true
     """
-
-    if not include_time:
-        date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=UTC())
-        if convert_to_eastern_time:
-            utc_date_object = date_object.astimezone(tz=Eastern_tzinfo())
-            # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
-            #                            str(date_object.tzinfo),
-            #                            "%Y%m%d %Z")
-            epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
+    if include_timezone:
+        if not include_time:
+            date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=pytz.UTC)
+            if convert_to_eastern_time:
+                utc_date_object = date_object.astimezone(tz=pytz.timezone('US/Eastern'))
+                # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
+                #                            str(date_object.tzinfo),
+                #                            "%Y%m%d %Z")
+                epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
+            else:
+                epochTime = int(time.mktime(date_object.timetuple()) * 1000)
         else:
-            epochTime = int(time.mktime(date_object.timetuple()) * 1000)
+            datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
+                                                regDate.second, tzinfo=pytz.UTC)
+            if convert_to_eastern_time:
+                utc_datetime_object = datetime_object.astimezone(tz=pytz.timezone('US/Eastern'))
+                # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
+                #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
+                #                            + str(date_object.second) + " " + str(date_object.tzinfo),
+                #                            "%Y%m%d %H:%M:%S %Z")
+                epochTime = int(time.mktime(utc_datetime_object.timetuple()) * 1000)
+            else:
+                epochTime = int(time.mktime(datetime_object.timetuple()) * 1000)
     else:
-        datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
-                                            regDate.second, tzinfo=UTC())
-        if convert_to_eastern_time:
-            utc_datetime_object = datetime_object.astimezone(tz=Eastern_tzinfo())
-            # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " "
-            #                            + str(date_object.hour) + ":" + str(date_object.minute) + ":"
-            #                            + str(date_object.second) + " " + str(date_object.tzinfo),
-            #                            "%Y%m%d %H:%M:%S %Z")
-            epochTime = int(time.mktime(utc_datetime_object.timetuple()) * 1000)
+        if not include_time:
+            date_object = datetime.datetime(regDate.year, regDate.month, regDate.day, tzinfo=pytz.UTC)
+            if convert_to_eastern_time:
+                utc_date_object = date_object.astimezone(tz=pytz.timezone('US/Eastern'))
+                # structTime = time.strptime(str(date_object.year) + str(date_object.month) + str(date_object.day) + " " +
+                #                            str(date_object.tzinfo),
+                #                            "%Y%m%d %Z")
+                epochTime = int(time.mktime(utc_date_object.timetuple()) * 1000)
+            else:
+                epochTime = int(time.mktime(date_object.timetuple()) * 1000)
         else:
+            datetime_object = datetime.datetime(regDate.year, regDate.month, regDate.day, regDate.hour, regDate.minute,
+                                                regDate.second)
             epochTime = int(time.mktime(datetime_object.timetuple()) * 1000)
     return (epochTime)
 
