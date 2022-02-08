@@ -2,22 +2,15 @@
 import datetime
 
 import __init__ as quickbase
+from quickbase import generate_quickbase_app
 
 
-def generate_quickbase_app(file='CIC.cfg'):
-    """
-    Generates a quickbase.QuickbaseApp to be used in all queries against the quickbase database
-    :return CIC: quickbase.QuickbaseApp with all necessary parameters to perform queries and actions
-    """
-    cic_tables = quickbase.generateTableDict(file)
-    baseUrl = "https://cictr.quickbase.com/db/"
-    ticket = cic_tables['ticket']
-    CIC = quickbase.QuickbaseApp(baseUrl, ticket, cic_tables)
-    return CIC
 
 if __name__ == '__main__':
-    r = datetime.datetime.now()
-    s = quickbase.DateToEpoch(r, include_time=True, convert_to_eastern_time=True)
+    CIC = generate_quickbase_app(baseUrl='https://michaelherman.quickbase.com/db/', foo='bar')
+    v = quickbase.getTableFIDDict(CIC, 'clients', return_reverse=True)
+    v.performAction()
+    print(v)
     # app = generate_quickbase_app()
     #
     # query = "query={3.EX.'93'}"
