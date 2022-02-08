@@ -22,6 +22,12 @@ import pytz
 from urllib.parse import urlparse
 from influxdb import InfluxDBClient
 
+class AuthentcationError(Exception):
+    def __init__(self, message='Authentication String Invalid'):
+        self.message = message
+        super().__init__(self.message)
+
+
 class Analytics:
     """ Class for gathering Quickbase usage statistics """
 
@@ -102,7 +108,7 @@ class Analytics:
                 pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
 
 class QuickbaseApp():
-    def __init__(self, baseurl, ticket, tables, token=None, **kwargs):
+    def __init__(self, baseurl='https://cictr.quickbase.com/db/', ticket=None, tables=None, token=None, **kwargs):
         """Basic unit storing useful information for communicating with Quickbase
 
         :param baseurl: String, https://<domain>.quickbase.com/db/
@@ -111,12 +117,25 @@ class QuickbaseApp():
         :param token: For future use
         :return:
         """
-        self.base_url = baseurl # generally https://cictr.quickbase.com/db/, the base url for all CIC quickbase apps
+        self.base_url = baseurl   # generally https://cictr.quickbase.com/db/, the base url for all CIC quickbase apps
         self.ticket = ticket    # authentication ticket
-        self.token = token      # authentication token, never used
-        self.tables = tables    # dict of table dbids by table name
+        self.token = token      # authentication token
+
+        if tables == None:
+            self.tables = generateTableDict('./CIC.cfg')
+        else:
+            self.tables = tables
+        if token is not None:
+            self.authentication_string = "<usertoken>%s</usertoken>" % token
+            self.authentication_type = 'usertoken'
+        else:
+            assert ticket is not None
+            self.authentication_string = "<ticket>%s</ticket>" % ticket
+            self.ticket = ticket
+            self.authentication_type = 'ticket'
         if kwargs:
             self.__dict__.update(kwargs)    # optional arguments
+
 
 
 class QuickbaseAction():
@@ -213,7 +232,7 @@ class QuickbaseAction():
         self.request.data = self.data.encode('utf-8')
 
 
-    def performAction(self):
+    def performAction(self, retry=False):
         """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
 
         :return: response
@@ -223,98 +242,114 @@ class QuickbaseAction():
         Analytics().collect(tags={'action': self.action})
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        # if self.force_utf8:
-        if self.action == "API_DoQuery":
-            self.etree_content = parseQueryContent(self.content)
+        if b'<errcode>4</errcode' in self.content:
+            if retry:
+                raise AuthentcationError
+            self.app.authentication_string = self.app.authentication_string.replace('ticket', 'usertoken')
+            self.data = self.data.replace('ticket', 'usertoken')
+            self.request.data = self.request.data.replace(b'ticket', b'usertoken')
+            self.app.authentication_type = 'usertoken'
+            self.performAction(retry=True)
+        elif b'<errcode>83</errcode>' in self.content:
+            if retry:
+                raise AuthentcationError
+            self.app.authentication_string = self.app.authentication_string.replace('usertoken', 'ticket')
+            self.data = self.data.replace('usertoken', 'ticket')
+            self.request.data = self.request.data.replace(b'usertoken', b'ticket')
+            self.app.authentication_type = 'ticket'
+            self.performAction(retry=True)
         else:
-            try:
-                self.etree_content = etree.fromstring(self.content)
-            except xml.etree.ElementTree.ParseError as err:
-                try:
-                    parser = etree.XMLParser(encoding='cp1252')
-                    self.etree_content = etree.fromstring(self.content, parser=parser)
-                except Exception as err2:
-                    try:
-                        self.etree_content = etree.fromstring(self.content.decode('cp1252'))
-                    except Exception as err3:
-                        print("triple exception caught")
-                        raise Exception(str(err3))
-        self.fid_dict = dict()
-        if self.action == 'API_DoQueryCount':
-            self.raw_response = self.etree_content.find('numMatches')
-            self.response = QuickbaseResponse(self.raw_response)
-            return self.raw_response.text
-        elif self.action_string != 'csv':
-            if len(self.etree_content) != 0 and \
-                    type(self.etree_content) == list and \
-                    type(self.etree_content[0]) == dict:
-                try:
-                    self.raw_response = etree.fromstring(self.content).findall('record')
-                except:
-                    self.raw_response = None
-                self.response = QuickbaseResponse([])
-                self.response.values = self.etree_content
-                self.response.records = self.content
-            elif type(self.etree_content) != list:
-                self.raw_response = self.etree_content.findall('record')
-                self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
+            if self.action == "API_DoQuery":
+                self.etree_content = parseQueryContent(self.content)
             else:
-                self.raw_response = list()
-                for content in self.etree_content:
-                    self.raw_response.append(content.getchildren())
+                try:
+                    self.etree_content = etree.fromstring(self.content)
+                except xml.etree.ElementTree.ParseError as err:
+                    try:
+                        parser = etree.XMLParser(encoding='cp1252')
+                        self.etree_content = etree.fromstring(self.content, parser=parser)
+                    except Exception as err2:
+                        try:
+                            self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                        except Exception as err3:
+                            print("triple exception caught")
+                            raise Exception(str(err3))
+            self.fid_dict = dict()
+            if self.action == 'API_DoQueryCount':
+                self.raw_response = self.etree_content.find('numMatches')
                 self.response = QuickbaseResponse(self.raw_response)
-            if not self.action_string == "add" and not self.action_string == "purge":
-                if self.clist and len(self.response.values) != 0:
-                    fid_list = self.clist.split('.')
+                return self.raw_response.text
+            elif self.action_string != 'csv':
+                if len(self.etree_content) != 0 and \
+                        type(self.etree_content) == list and \
+                        type(self.etree_content[0]) == dict:
                     try:
-                        field_list = [x for x in self.response.values[0]]
-                        counter = 0
-                        for fid in fid_list:
-                            self.fid_dict[fid] = field_list[counter]  # map field names to field id numbers
-                            counter += 1
-                    except IndexError:
-                        self.fid_dict[fid] = None   #CAUTION: Quickbase will not tell you if you include an invalid field ID in a clist!
+                        self.raw_response = etree.fromstring(self.content).findall('record')
+                    except:
+                        self.raw_response = None
+                    self.response = QuickbaseResponse([])
+                    self.response.values = self.etree_content
+                    self.response.records = self.content
+                elif type(self.etree_content) != list:
+                    self.raw_response = self.etree_content.findall('record')
+                    self.response = QuickbaseResponse(self.raw_response)    # map the response to a QuickbaseResponse object
                 else:
-                    self.fid_dict = None
-                if not self.return_records:
-                    return self.content
+                    self.raw_response = list()
+                    for content in self.etree_content:
+                        self.raw_response.append(content.getchildren())
+                    self.response = QuickbaseResponse(self.raw_response)
+                if not self.action_string == "add" and not self.action_string == "purge":
+                    if self.clist and len(self.response.values) != 0:
+                        fid_list = self.clist.split('.')
+                        try:
+                            field_list = [x for x in self.response.values[0]]
+                            counter = 0
+                            for fid in fid_list:
+                                self.fid_dict[fid] = field_list[counter]  # map field names to field id numbers
+                                counter += 1
+                        except IndexError:
+                            self.fid_dict[fid] = None   #CAUTION: Quickbase will not tell you if you include an invalid field ID in a clist!
+                    else:
+                        self.fid_dict = None
+                    if not self.return_records:
+                        return self.content
+                    else:
+                        return self.raw_response
                 else:
-                    return self.raw_response
-            else:
-                response_dict = {'errcode': self.etree_content.find('errcode').text,
-                                 'errtext': self.etree_content.find('errtext').text}
-                if self.etree_content.find('rid') is not None:
-                    response_dict['rid'] = self.etree_content.find('rid').text  # record ids of new records
+                    response_dict = {'errcode': self.etree_content.find('errcode').text,
+                                     'errtext': self.etree_content.find('errtext').text}
+                    if self.etree_content.find('rid') is not None:
+                        response_dict['rid'] = self.etree_content.find('rid').text  # record ids of new records
+                    else:
+                        response_dict['rid'] = None
+                    if self.etree_content.find('errdetail') is not None:
+                        response_dict['errdetail'] = self.etree_content.find('errdetail').text
+                    else:
+                        response_dict['errdetail'] = None
+                    return response_dict
+            if self.action_string == 'csv' or self.action_string == 'edit':
+                resp = etree.fromstring(self.content)
+                if resp.find('num_recs_input') is not None: # records received from the query
+                    self.num_recs_input = resp.find('num_recs_input').text
                 else:
-                    response_dict['rid'] = None
-                if self.etree_content.find('errdetail') is not None:
-                    response_dict['errdetail'] = self.etree_content.find('errdetail').text
+                    self.num_recs_input = "0"
+                if resp.find('num_recs_added') is not None: # records created
+                    self.num_recs_added = resp.find('num_recs_added').text
                 else:
-                    response_dict['errdetail'] = None
-                return response_dict
-        if self.action_string == 'csv' or self.action_string == 'edit':
-            resp = etree.fromstring(self.content)
-            if resp.find('num_recs_input') is not None: # records received from the query
-                self.num_recs_input = resp.find('num_recs_input').text
-            else:
-                self.num_recs_input = "0"
-            if resp.find('num_recs_added') is not None: # records created
-                self.num_recs_added = resp.find('num_recs_added').text
-            else:
-                self.num_recs_added = "0"
-            if resp.find('num_recs_updated') is not None:   # records updated
-                self.num_recs_updated = resp.find('num_recs_updated').text
-            else:
-                self.num_recs_updated = "0"
-            self.rid_list = list()
-            rids = etree.fromstring(self.content).find('rids')  # record id numbers
-            try:
-                for rid in rids.findall('rid'):
-                    self.rid_list.append(rid.text)
-                return self.rid_list
-            except AttributeError as err:
-                print(err)
-                print(self.content)
+                    self.num_recs_added = "0"
+                if resp.find('num_recs_updated') is not None:   # records updated
+                    self.num_recs_updated = resp.find('num_recs_updated').text
+                else:
+                    self.num_recs_updated = "0"
+                self.rid_list = list()
+                rids = etree.fromstring(self.content).find('rids')  # record id numbers
+                try:
+                    for rid in rids.findall('rid'):
+                        self.rid_list.append(rid.text)
+                    return self.rid_list
+                except AttributeError as err:
+                    print(err)
+                    print(self.content)
 
     def buildQuery(self):
         encoding = '<encoding>utf-8</encoding>' if self.force_utf8 else ''
@@ -325,10 +360,10 @@ class QuickbaseAction():
                 self.data = """
                                 <qdbapi>
                                     %s
-                                    <ticket>%s</ticket>
+                                    %s
                                     <%s>%s</%s>
                                     """ % (
-                encoding, self.app.ticket, self.action_string, self.query, self.action_string)
+                encoding, self.app.authentication_string, self.action_string, self.query, self.action_string)
                 if clist:
                     self.data = self.data + """<clist>%s</clist>
                                 """ % (self.clist)
@@ -337,10 +372,10 @@ class QuickbaseAction():
                 self.data = """
                                 <qdbapi>
                                     %s
-                                    <ticket>%s</ticket>
+                                    %s
                                     <%s>%s</%s>
                                     """ % (
-                encoding, self.app.ticket, self.action_string, self.query, self.action_string)
+                encoding, self.app.authentication_string, self.action_string, self.query, self.action_string)
                 if self.clist:
                     self.data = self.data + """<clist>%s</clist>
                                 """ % (self.clist)
@@ -352,8 +387,8 @@ class QuickbaseAction():
                 self.data = """
                                 <qdbapi>
                                     %s
-                                    <ticket>%s</ticket>
-                                    """ % (encoding, self.app.ticket)
+                                    %s
+                                    """ % (encoding, self.app.authentication_string)
                 if self.clist:
                     self.data = self.data + """<clist>%s</clist>
                                 """ % (self.clist)
@@ -361,8 +396,8 @@ class QuickbaseAction():
                 self.data = """
                                 <qdbapi>
                                     %s
-                                    <ticket>%s</ticket>
-                                    """ % (encoding, self.app.ticket)
+                                    %s
+                                    """ % (encoding, self.app.authentication_string)
                 if self.clist:
                     self.data = self.data + """<clist>%s</clist>
                                 """ % (self.clist)
@@ -377,10 +412,10 @@ class QuickbaseAction():
         self.data = """
                         <qdbapi>
                             <msInUTC>%s</msInUTC>
-                            <ticket>%s</ticket>
+                            %s
                             %s
 
-                        """ % (self.send_time_in_utc, self.app.ticket, recordInfo)
+                        """ % (self.send_time_in_utc, self.app.authentication_string, recordInfo)
 
     def buildPurge(self):
         assert self.confirmation
@@ -396,9 +431,9 @@ class QuickbaseAction():
                 query_type = "query"
             self.data = """
                            <qdbapi>
-                               <ticket>%s</ticket>
+                               %s
                                <%s>%s</%s>
-                           """ % (self.app.ticket, query_type, self.query, query_type)
+                           """ % (self.app.authentication_string, query_type, self.query, query_type)
         return None
 
     def buildVariable(self):
@@ -410,10 +445,10 @@ class QuickbaseAction():
             self.data = """
                             <qdbapi>
                                 <msInUTC>%s</msInUTC>
-                                <ticket>%s</ticket>
+                                %s
                                 <varname>%s</varname>
                                 <value>%s</value>
-                            """ % (self.send_time_in_utc, self.app.ticket, variable_name, variable_value)
+                            """ % (self.send_time_in_utc, self.app.authentication_string, variable_name, variable_value)
 
     def buildCSV(self):
         if type(self.data) == str:  # data can be type string, list or dict
@@ -427,7 +462,7 @@ class QuickbaseAction():
             self.data = """
             <qdbapi>
                 <msInUTC>%s</msInUTC>
-                <ticket>%s</ticket>
+                %s
                 <records_csv>
                     <![CDATA[
                         %s
@@ -436,7 +471,7 @@ class QuickbaseAction():
                 <clist>%s</clist>
                 <skipfirst>%s</skipfirst>
 
-                """ % (self.send_time_in_utc, self.app.ticket, self.data, self.clist, self.skip_first)
+                """ % (self.send_time_in_utc, self.app.authentication_string, self.data, self.clist, self.skip_first)
         elif type(self.data) == list:
             csv_lines = ""
             if type(self.data[0]) == list:  # a list of lists works as well
@@ -478,7 +513,7 @@ class QuickbaseAction():
             self.data = """
             <qdbapi>
                 <msInUTC>%s</msInUTC>
-                <ticket>%s</ticket>
+                %s
                 <records_csv>
                     <![CDATA[
                         %s
@@ -487,7 +522,7 @@ class QuickbaseAction():
                 <clist>%s</clist>
                 <skipfirst>%s</skipfirst>
 
-                """ % (self.send_time_in_utc, self.app.ticket, csv_lines, self.clist, self.skip_first)
+                """ % (self.send_time_in_utc, self.app.authentication_string, csv_lines, self.clist, self.skip_first)
         elif type(self.data) == dict:  # dicts are preferred for editing existing records. Dict key is record ID
             csv_lines = ""
             assert '3' in self.clist.split('.')
@@ -511,7 +546,7 @@ class QuickbaseAction():
             self.data = """
             <qdbapi>
                 <msInUTC>%s</msInUTC>
-                <ticket>%s</ticket>
+                %s
                 <records_csv>
                     <![CDATA[
                         %s
@@ -520,7 +555,7 @@ class QuickbaseAction():
                 <clist>%s</clist>
                 <skipfirst>%s</skipfirst>
 
-                """ % (self.send_time_in_utc, self.app.ticket, csv_lines, self.clist, "0")
+                """ % (self.send_time_in_utc, self.app.authentication_string, csv_lines, self.clist, "0")
 
 class QuickbaseResponse():
     """
@@ -575,6 +610,25 @@ class UTC(datetime.tzinfo):
     def tzname(self, dt):
         return "UTC"
 
+def generate_quickbase_app(config='CIC.cfg', baseUrl="https://cictr.quickbase.com/db/", auth_key=None, **kwargs):
+    """
+    Generates a quickbase.QuickbaseApp to be used in all queries against the quickbase database
+    :return CIC: quickbase.QuickbaseApp with all necessary parameters to perform queries and actions
+    """
+    cic_tables = generateTableDict(config)
+    # baseUrl = "https://cictr.quickbase.com/db/"
+    if auth_key is not None:
+        CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
+    elif 'ticket' in cic_tables:
+        ticket = cic_tables['ticket']
+        CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
+    else:
+        assert 'token' in cic_tables
+        token = cic_tables['token']
+        CIC = QuickbaseApp(baseUrl, token=token, tables=cic_tables, **kwargs)
+    return CIC
+
+
 def parseQueryContent(content):
     records = content.split(b'</record>')
     full_content = list()
@@ -617,7 +671,7 @@ def parseSchemaContent(content, include_field_details=False):
     return full_content
 
 
-def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True, return_field_details=False):
+def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard=True, return_field_details=False, return_reverse=False):
     """
     Uses API_GetSchema to generate a dict of FIDs by field name. Note that the responses here include a lot of extra
     information and generate a large (up to 1MB or more for some tables) response. This module should only be run as
@@ -638,8 +692,8 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
     request.add_header("QUICKBASE-ACTION", "API_GetSchema")
     data = """
     <qdbapi>
-        <ticket>%s</ticket>
-    </qdbapi>""" % (app_object.ticket)
+        %s
+    </qdbapi>""" % (app_object.authentication_string)
     request.data = data.encode('utf-8')
     response = urllib.request.urlopen(request)
     status = response.status
@@ -655,6 +709,10 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
             for field_label in full_content:
                 alphanumeric_key = alphanumeric_regex.sub("_", field_label).lower()
                 field_dict[alphanumeric_key] = full_content[field_label]
+        if return_reverse:
+            temp_dict = field_dict.copy()
+            for field_label in temp_dict:
+                field_dict[field_dict[field_label]] = alphanumeric_regex.sub("_", field_label).lower()
     return field_dict
 
 
@@ -679,6 +737,7 @@ def generateTableDict(import_filename):
 
 def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     """
+    DEPRECATED
     This function takes the base Quickbase URL, an authentication ticket, a database ID (DBID), a query and a clist, and
     returns an XML file.
     URL format: string, 'https://<basedomain>.quickbase.com/db/
@@ -727,6 +786,7 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
 
 def QBAdd(url, ticket, dbid, fieldValuePairs):
     """
+    DEPRECATED
     This function adds a record in Quickbase. fieldValuePairs should be a dictionary of fid and values, and must include
     all required fields (especially related client).
     fieldValuePairs must use fid values as key, not field names
@@ -860,6 +920,16 @@ def MonthDict(testDate):
 
 
 def QBEdit(url, ticket, dbid, rid, field, value):
+    """
+    DEPRECATED
+    :param url:
+    :param ticket:
+    :param dbid:
+    :param rid:
+    :param field:
+    :param value:
+    :return:
+    """
     action = 'API_EditRecord'
 
     query = urllib.request.Request(url + dbid)
@@ -882,7 +952,9 @@ def QBEdit(url, ticket, dbid, rid, field, value):
 
 
 def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
-    """ Given a csv-formatted string, list, or dict, upload records to Quickbase
+    """
+    DEPRECATED
+    Given a csv-formatted string, list, or dict, upload records to Quickbase
 
     :param url: base url (https://<domain>.quickbase.com/db/
     :param ticket: authentication ticket
@@ -975,6 +1047,15 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
 
 
 def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
+    """
+    DEPRECATED
+    :param base_url:
+    :param ticket:
+    :param dbid:
+    :param report_id:
+    :param file_name:
+    :return:
+    """
     csv_file = file_name
     urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket,
                                csv_file)
@@ -1036,6 +1117,18 @@ def csvSort(input_file,
             w.writerow(line)
 
 def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/'):
+    """
+    DEPRECATED
+    :param dbid:
+    :param ticket:
+    :param rid:
+    :param fid:
+    :param filename:
+    :param vid:
+    :param baseurl:
+    :return:
+    """
+
     request = urllib.request.Request(
         baseurl + 'up/' + dbid + '/a/r' + rid + '/e' + fid + '/v' + vid + '?ticket=' + ticket)
     response = urllib.request.urlopen(request).read()
