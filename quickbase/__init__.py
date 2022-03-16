@@ -125,7 +125,18 @@ class QuickbaseApp():
             self.tables = generateTableDict('./CIC.cfg')
         else:
             self.tables = tables
-        if token is not None:
+        if ticket is None and token is None:
+            if 'token' in self.tables:
+                token = self.tables['token']
+                self.authentication_string = "<usertoken>%s</usertoken>" % token
+                self.authentication_type = 'usertoken'
+                self.token = token
+            elif 'ticket' in self.tables:
+                ticket = self.tables['ticket']
+                self.authentication_string = "<ticket>%s</ticket>" % ticket
+                self.authentication_type = 'ticket'
+                self.ticket = ticket
+        elif token is not None:
             self.authentication_string = "<usertoken>%s</usertoken>" % token
             self.authentication_type = 'usertoken'
         else:
