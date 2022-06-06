@@ -22,6 +22,9 @@ import pytz
 from urllib.parse import urlparse
 from influxdb import InfluxDBClient
 
+import quickbase
+
+
 class AuthentcationError(Exception):
     def __init__(self, message='Authentication String Invalid'):
         self.message = message
@@ -172,7 +175,7 @@ class QuickbaseAction():
         self.app = app
         self.force_utf8 = force_utf8
         self.skip_first = skip_first
-
+        self.dbid_key = dbid_key
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
@@ -243,7 +246,7 @@ class QuickbaseAction():
         self.request.data = self.data.encode('utf-8')
 
 
-    def performAction(self, retry=False):
+    def performAction(self, retry=False, record_return=None, **kwargs):
         """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
 
         :return: response
@@ -253,7 +256,22 @@ class QuickbaseAction():
         Analytics().collect(tags={'action': self.action})
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        if b'<errcode>4</errcode' in self.content:
+        try:
+            self.etree_content = etree.fromstring(self.content)
+        except etree.ParseError as err:
+            try:
+                parser = etree.XMLParser(encoding='cp1252')
+                self.etree_content = etree.fromstring(self.content, parser=parser)
+            except Exception as err2:
+                try:
+                    self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                except Exception as err3:
+                    print("triple exception caught")
+                    raise Exception(str(err3))
+        self.errcode = self.etree_content.find('errcode').text
+        self.errtext = self.etree_content.find('errtext').text
+
+        if self.errcode == '4':
             if retry:
                 raise AuthentcationError
             self.app.authentication_string = self.app.authentication_string.replace('ticket', 'usertoken')
@@ -261,7 +279,7 @@ class QuickbaseAction():
             self.request.data = self.request.data.replace(b'ticket', b'usertoken')
             self.app.authentication_type = 'usertoken'
             self.performAction(retry=True)
-        elif b'<errcode>83</errcode>' in self.content:
+        elif self.errcode == '83':
             if retry:
                 raise AuthentcationError
             self.app.authentication_string = self.app.authentication_string.replace('usertoken', 'ticket')
@@ -269,22 +287,32 @@ class QuickbaseAction():
             self.request.data = self.request.data.replace(b'usertoken', b'ticket')
             self.app.authentication_type = 'ticket'
             self.performAction(retry=True)
+        elif self.errcode == '75':
+            if record_return is None:
+                record_return = 5000
+            if retry:
+                record_return = record_return/2
+            self.record_count = QuickbaseAction(self.app, self.dbid_key, 'querycount', query=self.query).performAction()
+            if int(self.record_count) > record_return:
+                counter = 0
+                while counter * record_return <= int(self.record_count):
+                    recurse_query = QuickbaseAction(self.app, self.dbid_key, 'query', query=self.query, clist=self.clist)
         else:
             if self.action == "API_DoQuery":
                 self.etree_content = parseQueryContent(self.content)
-            else:
-                try:
-                    self.etree_content = etree.fromstring(self.content)
-                except xml.etree.ElementTree.ParseError as err:
-                    try:
-                        parser = etree.XMLParser(encoding='cp1252')
-                        self.etree_content = etree.fromstring(self.content, parser=parser)
-                    except Exception as err2:
-                        try:
-                            self.etree_content = etree.fromstring(self.content.decode('cp1252'))
-                        except Exception as err3:
-                            print("triple exception caught")
-                            raise Exception(str(err3))
+            # else:
+                # try:
+                #     self.etree_content = etree.fromstring(self.content)
+                # except etree.ParseError as err:
+                #     try:
+                #         parser = etree.XMLParser(encoding='cp1252')
+                #         self.etree_content = etree.fromstring(self.content, parser=parser)
+                #     except Exception as err2:
+                #         try:
+                #             self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                #         except Exception as err3:
+                #             print("triple exception caught")
+                #             raise Exception(str(err3))
             self.fid_dict = dict()
             if self.action == 'API_DoQueryCount':
                 self.raw_response = self.etree_content.find('numMatches')
@@ -629,7 +657,7 @@ def generate_quickbase_app(config='CIC.cfg', baseUrl="https://cictr.quickbase.co
     cic_tables = generateTableDict(config)
     # baseUrl = "https://cictr.quickbase.com/db/"
     if auth_key is not None:
-        CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
+        CIC = QuickbaseApp(baseUrl, ticket=auth_key, tables=cic_tables, **kwargs)
     elif 'ticket' in cic_tables:
         ticket = cic_tables['ticket']
         CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
