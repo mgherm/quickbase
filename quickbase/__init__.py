@@ -159,7 +159,7 @@ class QuickbaseAction():
     """
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
                  skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False,
-                 custom_body=None, record_return=None, error_75_retry=False):
+                 custom_body=None, record_return=None, error_75_retry=False, record_count=None):
         """
 
         :param app: class QuickbaseApp
@@ -178,6 +178,7 @@ class QuickbaseAction():
         self.skip_first = skip_first
         self.dbid_key = dbid_key
         self.record_return = record_return
+        self.record_count = record_count
         self.error_75_retry = error_75_retry
         self.options = options
         if dbid_key in self.app.tables: # build the request url
@@ -1245,7 +1246,7 @@ def recursive_query(query_object):
     elif query_object.error_75_retry:  # If that does not work, we halve the number of records returned
         query_object.record_return = int(query_object.record_return / 2)
         query_object.error_75_retry = False
-        return(recursive_query(query_object))
+        query_object = recursive_query(query_object)
     options = str()
     if query_object.options is not None:
         existing_options = query_object.options.split('.')
@@ -1256,7 +1257,7 @@ def recursive_query(query_object):
     if query_object.response is not None:
         if len(query_object.response.values) >= int(query_object.record_count):
             return query_object
-        options += '.skp-' + len(query_object.response.values)
+        options += '.skp-' + str(len(query_object.response.values))
     if options[0] == '.':
         options = options[1:]
     fractional_query = QuickbaseAction(query_object.app,
@@ -1266,10 +1267,12 @@ def recursive_query(query_object):
                                        clist=query_object.clist,
                                        options=options,
                                        slist=query_object.slist,
-                                       record_return=query_object.record_return)
+                                       record_return=query_object.record_return,
+                                       record_count=query_object.record_count)
     fractional_query.performAction()
     if query_object.response is None:
         query_object.response = fractional_query.response
     else:
         query_object.response.values.extend(fractional_query.response.values)
+    query_object = recursive_query(query_object)
     return query_object
