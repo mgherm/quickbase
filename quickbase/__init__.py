@@ -158,7 +158,8 @@ class QuickbaseAction():
     also contain any response from Quickbase
     """
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False, custom_body=None):
+                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False,
+                 custom_body=None, record_return=None, error_75_retry=False):
         """
 
         :param app: class QuickbaseApp
@@ -176,6 +177,9 @@ class QuickbaseAction():
         self.force_utf8 = force_utf8
         self.skip_first = skip_first
         self.dbid_key = dbid_key
+        self.record_return = record_return
+        self.error_75_retry = error_75_retry
+        self.options = options
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
@@ -235,8 +239,7 @@ class QuickbaseAction():
             <qdbapi>
                 %s""" % custom_body
 
-        if options is not None:
-            self.options = options  # custom options
+        if self.options is not None:  # custom options
             self.data = self.data + """
             <options>%s</options>
             """ % self.options
@@ -246,7 +249,7 @@ class QuickbaseAction():
         self.request.data = self.data.encode('utf-8')
 
 
-    def performAction(self, retry=False, record_return=None, **kwargs):
+    def performAction(self, retry=False, **kwargs):
         """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
 
         :return: response
@@ -287,16 +290,37 @@ class QuickbaseAction():
             self.request.data = self.request.data.replace(b'usertoken', b'ticket')
             self.app.authentication_type = 'ticket'
             self.performAction(retry=True)
-        elif self.errcode == '75':
-            if record_return is None:
-                record_return = 5000
-            if retry:
-                record_return = record_return/2
+        elif self.errcode == '75':  # this will happen with very large queries
+            if self.record_return is None:  # We start with a best guess of 5000 as an allowed number of records returned
+                self.record_return = 5000
+            if self.error_75_retry:   # If that does not work, we halve the number of records returned
+                self.record_return = self.record_return/2
             self.record_count = QuickbaseAction(self.app, self.dbid_key, 'querycount', query=self.query).performAction()
-            if int(self.record_count) > record_return:
+            if int(self.record_count) > self.record_return:
                 counter = 0
-                while counter * record_return <= int(self.record_count):
-                    recurse_query = QuickbaseAction(self.app, self.dbid_key, 'query', query=self.query, clist=self.clist)
+                if self.options is not None:
+                    existing_options = self.options.split('.')
+                    for option in existing_options:
+                        if 'num-' in option:
+                            existing_options.remove(option)
+                        if 'skp-' in option:
+                            existing_options.remove(option)
+                    self.options = '.'.join(existing_options)
+                else:
+                    self.options = ''
+                while counter * self.record_return <= int(self.record_count):
+                    self.options += '.num-' + str(self.record_return) + '.skp-' + str(counter * self.record_return)
+                    recurse_query = QuickbaseAction(self.app,
+                                                    self.dbid_key,
+                                                    'query',
+                                                    query=self.query,
+                                                    clist=self.clist,
+                                                    options=self.options,
+                                                    slist=self.slist,
+                                                    error_75_retry=True,
+                                                    record_return=self.record_return)
+                    recurse_query.performAction()
+                    counter += 1
         else:
             if self.action == "API_DoQuery":
                 self.etree_content = parseQueryContent(self.content)
