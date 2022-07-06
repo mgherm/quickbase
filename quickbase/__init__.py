@@ -259,20 +259,9 @@ class QuickbaseAction():
         Analytics().collect(tags={'action': self.action})
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        try:
-            self.etree_content = etree.fromstring(self.content)
-        except etree.ParseError as err:
-            try:
-                parser = etree.XMLParser(encoding='cp1252')
-                self.etree_content = etree.fromstring(self.content, parser=parser)
-            except Exception as err2:
-                try:
-                    self.etree_content = etree.fromstring(self.content.decode('cp1252'))
-                except Exception as err3:
-                    print("triple exception caught")
-                    raise Exception(str(err3))
-        self.errcode = self.etree_content.find('errcode').text
-        self.errtext = self.etree_content.find('errtext').text
+        self.head_content = etree.fromstring(self.content.split(b'</errtext>')[0]+b'</errtext>\r\n</qdbapi>')
+        self.errcode = self.head_content.find('errcode').text
+        self.errtext = self.head_content.find('errtext').text
 
         if self.errcode == '4':
             if retry:
@@ -290,37 +279,16 @@ class QuickbaseAction():
             self.request.data = self.request.data.replace(b'usertoken', b'ticket')
             self.app.authentication_type = 'ticket'
             self.performAction(retry=True)
-        elif self.errcode == '75':  # this will happen with very large queries
-            if self.record_return is None:  # We start with a best guess of 5000 as an allowed number of records returned
-                self.record_return = 5000
-            if self.error_75_retry:   # If that does not work, we halve the number of records returned
-                self.record_return = self.record_return/2
-            self.record_count = QuickbaseAction(self.app, self.dbid_key, 'querycount', query=self.query).performAction()
-            if int(self.record_count) > self.record_return:
-                counter = 0
-                if self.options is not None:
-                    existing_options = self.options.split('.')
-                    for option in existing_options:
-                        if 'num-' in option:
-                            existing_options.remove(option)
-                        if 'skp-' in option:
-                            existing_options.remove(option)
-                    self.options = '.'.join(existing_options)
-                else:
-                    self.options = ''
-                while counter * self.record_return <= int(self.record_count):
-                    self.options += '.num-' + str(self.record_return) + '.skp-' + str(counter * self.record_return)
-                    recurse_query = QuickbaseAction(self.app,
-                                                    self.dbid_key,
-                                                    'query',
-                                                    query=self.query,
-                                                    clist=self.clist,
-                                                    options=self.options,
-                                                    slist=self.slist,
-                                                    error_75_retry=True,
-                                                    record_return=self.record_return)
-                    recurse_query.performAction()
-                    counter += 1
+        elif self.errcode == '75' or self.errcode == '82':  # this will happen with very large queries
+            self.error_75_retry = True
+            self.response = recursive_query(self).response
+
+
+
+
+
+
+
         else:
             if self.action == "API_DoQuery":
                 self.etree_content = parseQueryContent(self.content)
@@ -337,6 +305,19 @@ class QuickbaseAction():
                 #         except Exception as err3:
                 #             print("triple exception caught")
                 #             raise Exception(str(err3))
+            else:
+                try:
+                    self.etree_content = etree.fromstring(self.content)
+                except etree.ParseError as err:
+                    try:
+                        parser = etree.XMLParser(encoding='cp1252')
+                        self.etree_content = etree.fromstring(self.content, parser=parser)
+                    except Exception as err2:
+                        try:
+                            self.etree_content = etree.fromstring(self.content.decode('cp1252'))
+                        except Exception as err3:
+                            print("triple exception caught")
+                            raise Exception(str(err3))
             self.fid_dict = dict()
             if self.action == 'API_DoQueryCount':
                 self.raw_response = self.etree_content.find('numMatches')
@@ -1252,3 +1233,43 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
     smtp.send_message(msg)
     smtp.quit()
     # syslog.syslog("Email sent to " + str(toaddr))
+
+def recursive_query(query_object):
+    if query_object.record_return is None:  # We start with a best guess of 5000 as an allowed number of records returned
+        query_object.record_count = QuickbaseAction(query_object.app, query_object.dbid_key, 'querycount',
+                                                    query=query_object.query).performAction()
+        if int(query_object.record_count) >= 8192:
+            query_object.record_return = 8192
+        else:
+            query_object.record_return = int(int(query_object.record_count) / 2)
+    elif query_object.error_75_retry:  # If that does not work, we halve the number of records returned
+        query_object.record_return = int(query_object.record_return / 2)
+        query_object.error_75_retry = False
+        return(recursive_query(query_object))
+    options = str()
+    if query_object.options is not None:
+        existing_options = query_object.options.split('.')
+        for option in existing_options:
+            if 'num-' not in option and 'skp-' not in option:
+                options += '.' + option
+    options += '.num-' + str(query_object.record_return)
+    if query_object.response is not None:
+        if len(query_object.response.values) >= int(query_object.record_count):
+            return query_object
+        options += '.skp-' + len(query_object.response.values)
+    if options[0] == '.':
+        options = options[1:]
+    fractional_query = QuickbaseAction(query_object.app,
+                                       query_object.dbid_key,
+                                       'query',
+                                       query=query_object.query,
+                                       clist=query_object.clist,
+                                       options=options,
+                                       slist=query_object.slist,
+                                       record_return=query_object.record_return)
+    fractional_query.performAction()
+    if query_object.response is None:
+        query_object.response = fractional_query.response
+    else:
+        query_object.response.values.extend(fractional_query.response.values)
+    return query_object
