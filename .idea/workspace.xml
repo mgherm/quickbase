@@ -28,8 +28,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Forgot 'self' in front of 'clist'">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Possibly working but enough changed that it needs extensive testing.">
       <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -524,7 +523,14 @@
       <option name="project" value="LOCAL" />
       <updated>1635963724529</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="Possibly working but enough changed that it needs extensive testing.">
+      <created>1657146778845</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1657146778845</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -596,7 +602,8 @@
     <MESSAGE value="Added option to use the table # or 'application' label for table dicts in generateTableDict" />
     <MESSAGE value="Switched out the custom tz objects because they were fucking with the salto robot" />
     <MESSAGE value="added include_timezone option" />
-    <option name="LAST_COMMIT_MESSAGE" value="added include_timezone option" />
+    <MESSAGE value="Possibly working but enough changed that it needs extensive testing." />
+    <option name="LAST_COMMIT_MESSAGE" value="Possibly working but enough changed that it needs extensive testing." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -613,22 +620,22 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1248</line>
+          <line>1228</line>
           <option name="timeStamp" value="52" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1258</line>
+          <line>1238</line>
           <option name="timeStamp" value="56" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1277</line>
+          <line>1257</line>
           <option name="timeStamp" value="59" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1276</line>
+          <line>1256</line>
           <option name="timeStamp" value="60" />
         </line-breakpoint>
       </breakpoints>

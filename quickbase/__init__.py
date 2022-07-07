@@ -283,29 +283,9 @@ class QuickbaseAction():
         elif self.errcode == '75' or self.errcode == '82':  # this will happen with very large queries
             self.error_75_retry = True
             self.response = recursive_query(self).response
-
-
-
-
-
-
-
         else:
             if self.action == "API_DoQuery":
                 self.etree_content = parseQueryContent(self.content)
-            # else:
-                # try:
-                #     self.etree_content = etree.fromstring(self.content)
-                # except etree.ParseError as err:
-                #     try:
-                #         parser = etree.XMLParser(encoding='cp1252')
-                #         self.etree_content = etree.fromstring(self.content, parser=parser)
-                #     except Exception as err2:
-                #         try:
-                #             self.etree_content = etree.fromstring(self.content.decode('cp1252'))
-                #         except Exception as err3:
-                #             print("triple exception caught")
-                #             raise Exception(str(err3))
             else:
                 try:
                     self.etree_content = etree.fromstring(self.content)
