@@ -25,10 +25,17 @@ from influxdb import InfluxDBClient
 import quickbase
 
 
-class AuthentcationError(Exception):
+class AuthenticationError(Exception):
     def __init__(self, message='Authentication String Invalid'):
         self.message = message
         super().__init__(self.message)
+
+
+class QuickbaseError(Exception):
+    def __init__(self, message='Quickbase has returned an error 75 or 82 when making a query for less than 100 records. Something is wrong.'):
+        self.message = message
+        super().__init__(self.message)
+
 
 
 class Analytics:
@@ -266,7 +273,7 @@ class QuickbaseAction():
 
         if self.errcode == '4':
             if retry:
-                raise AuthentcationError
+                raise AuthenticationError
             self.app.authentication_string = self.app.authentication_string.replace('ticket', 'usertoken')
             self.data = self.data.replace('ticket', 'usertoken')
             self.request.data = self.request.data.replace(b'ticket', b'usertoken')
@@ -274,7 +281,7 @@ class QuickbaseAction():
             self.performAction(retry=True)
         elif self.errcode == '83':
             if retry:
-                raise AuthentcationError
+                raise AuthenticationError
             self.app.authentication_string = self.app.authentication_string.replace('usertoken', 'ticket')
             self.data = self.data.replace('usertoken', 'ticket')
             self.request.data = self.request.data.replace(b'usertoken', b'ticket')
@@ -1162,7 +1169,7 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
 
     Analytics().collect(tags={'action': 'download_file'})
 
-def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None):
+def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None, user="noreply@cictr.com"):
     """
 
     :rtype : object
@@ -1194,7 +1201,7 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
         r = csv.reader(config_file)
         for row in r:
             authenticator[row[0]] = row[1]
-    user = "noreply@cictr.com"
+
     passwd = authenticator[user]
 
     msg = MIMEMultipart()
@@ -1223,6 +1230,8 @@ def recursive_query(query_object):
             query_object.record_return = 8192
         else:
             query_object.record_return = int(int(query_object.record_count) / 2)
+    elif query_object.record_return < 100 and query_object.error_75_retry:
+        raise QuickbaseError
     elif query_object.error_75_retry:  # If that does not work, we halve the number of records returned
         query_object.record_return = int(query_object.record_return / 2)
         query_object.error_75_retry = False

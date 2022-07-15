@@ -8,14 +8,22 @@ from quickbase import generate_quickbase_app
 
 if __name__ == '__main__':
 
-    CIC = quickbase.QuickbaseApp()
-    CIC.roles = quickbase.getTableFIDDict(CIC, 'roles', return_alphanumeric=True)
-    clist = [CIC.roles[x] for x in CIC.roles if int(CIC.roles[x])%10==0]
-    # clist = '1.2.3.4.5.6.7.8.9'
-    fuckery = quickbase.QuickbaseAction(CIC, 'roles', 'query', query="{1.OAF.'"+str(quickbase.DateToEpoch(datetime.date(year=2020, month=1, day=1)))+"'}", clist=clist)
+    # CIC = quickbase.QuickbaseApp()
+    # CIC.roles = quickbase.getTableFIDDict(CIC, 'roles', return_alphanumeric=True)
+    # clist = [CIC.roles[x] for x in CIC.roles if int(CIC.roles[x])%10==0]
+    # clist += '.3'
+    # fuckery = quickbase.QuickbaseAction(CIC, 'roles', 'query', query="{1.OAF.'"+str(quickbase.DateToEpoch(datetime.date(year=2020, month=1, day=1)))+"'}", clist=clist)
+    # fucker_set = set()
+    # fuckery.performAction()
+    # for fucker in fuckery.response.values:
+    #     if fucker['role__'] not in fucker_set:
+    #         fucker_set.add(fucker['role__'])
+    #     else:
+    #         raise AssertionError
+    # print(fucker)
+    quickbase.email('test email', ['herman@cic.com'], con=['test email'], fromaddr='4240-hvac@cictr.com', user='4240hvac@cictr.com')
 
-    fuckery.performAction()
-    print(fuckery)
+
     # key_field_labels = ['record_id_',
     #                     'role___person___full_name',
     #                     'role___client',

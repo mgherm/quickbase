@@ -28,8 +28,11 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Possibly working but enough changed that it needs extensive testing.">
+    <list default="true" id="0cc609ad-bcec-4743-bcdb-8c368aa02d6c" name="Default" comment="Work on recursive query. Needs to properly recurse.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/quickbase/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/quickbase/action_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/quickbase/action_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +72,9 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;
+  },
   &quot;keyToStringList&quot;: {
     &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
       &quot;Python&quot;
@@ -206,9 +212,9 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="C:\Program Files\Python38\python.exe" />
+      <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/quickbase" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
@@ -382,6 +388,9 @@
       <workItem from="1652451314245" duration="1193000" />
       <workItem from="1652713560131" duration="1046000" />
       <workItem from="1654526080951" duration="6300000" />
+      <workItem from="1657207794435" duration="3065000" />
+      <workItem from="1657302912765" duration="3569000" />
+      <workItem from="1657546977895" duration="1201000" />
     </task>
     <task id="LOCAL-00001" summary="Needs testing, but should be completed.">
       <created>1426537282299</created>
@@ -610,33 +619,13 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/action_test.py</url>
-          <line>60</line>
+          <line>68</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/quickbase/action_test.py</url>
-          <line>17</line>
-          <option name="timeStamp" value="46" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1228</line>
-          <option name="timeStamp" value="52" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1238</line>
-          <option name="timeStamp" value="56" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1257</line>
-          <option name="timeStamp" value="59" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/quickbase/__init__.py</url>
-          <line>1256</line>
-          <option name="timeStamp" value="60" />
+          <line>22</line>
+          <option name="timeStamp" value="61" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -654,7 +643,7 @@
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/quickbase$action_test.coverage" NAME="action_test Coverage Results" MODIFIED="1631130618205" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/quickbase$action_test__1_.coverage" NAME="action_test (1) Coverage Results" MODIFIED="1657146511089" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/quickbase" />
+    <SUITE FILE_PATH="coverage/quickbase$action_test.coverage" NAME="action_test Coverage Results" MODIFIED="1654532694498" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/quickbase$action_test__1_.coverage" NAME="action_test (1) Coverage Results" MODIFIED="1657309178287" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/quickbase" />
   </component>
 </project>
