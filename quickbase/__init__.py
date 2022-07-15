@@ -22,6 +22,8 @@ import pytz
 from urllib.parse import urlparse
 from influxdb import InfluxDBClient
 
+DEFAULT_TIMEOUT = 10  # default request timeout in seconds
+
 class AuthentcationError(Exception):
     def __init__(self, message='Authentication String Invalid'):
         self.message = message
@@ -248,7 +250,7 @@ class QuickbaseAction():
 
         :return: response
         """
-        self.response_object = urllib.request.urlopen(self.request) # do the thing
+        self.response_object = urllib.request.urlopen(self.request, timeout=DEFAULT_TIMEOUT) # do the thing
 
         Analytics().collect(tags={'action': self.action})
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
@@ -706,7 +708,7 @@ def getTableFIDDict(app_object, dbid, return_alphanumeric=False, return_standard
         %s
     </qdbapi>""" % (app_object.authentication_string)
     request.data = data.encode('utf-8')
-    response = urllib.request.urlopen(request)
+    response = urllib.request.urlopen(request, timeout=DEFAULT_TIMEOUT)
     status = response.status
     field_dict = dict()
     alphanumeric_regex = re.compile('\W')
@@ -785,7 +787,7 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
             </qdbapi>
         """ % ('0', ticket, request, clist, slist)
     query.data = data.encode('utf-8')
-    content = urllib.request.urlopen(query).read()
+    content = urllib.request.urlopen(query, timeout=DEFAULT_TIMEOUT).read()
 
     Analytics().collect(tags={'action': action})
 
@@ -819,7 +821,7 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     """ % ('0', ticket, recordInfo)
 
     query.data = data.encode('utf-8')
-    response = urllib.request.urlopen(query)
+    response = urllib.request.urlopen(query, timeout=DEFAULT_TIMEOUT)
 
     Analytics().collect(tags={'action': action})
 
@@ -955,7 +957,7 @@ def QBEdit(url, ticket, dbid, rid, field, value):
         </qdbapi>
     """ % ('0', ticket, rid, field, value)
     query.data = data.encode('utf-8')
-    response = urllib.request.urlopen(query)
+    response = urllib.request.urlopen(query, timeout=DEFAULT_TIMEOUT)
 
     Analytics().collect(tags={'action': action})
 
@@ -1050,7 +1052,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     else:
         return None
     request.data = data.encode('utf-8')
-    response = urllib.request.urlopen(request).read()
+    response = urllib.request.urlopen(request, timeout=DEFAULT_TIMEOUT).read()
 
     Analytics().collect(tags={'action': action})
 
@@ -1142,7 +1144,7 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
 
     request = urllib.request.Request(
         baseurl + 'up/' + dbid + '/a/r' + rid + '/e' + fid + '/v' + vid + '?ticket=' + ticket)
-    response = urllib.request.urlopen(request).read()
+    response = urllib.request.urlopen(request, timeout=DEFAULT_TIMEOUT).read()
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)
 
