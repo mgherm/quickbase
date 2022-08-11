@@ -32,10 +32,15 @@ class AuthenticationError(Exception):
 
 
 class QuickbaseError(Exception):
-    def __init__(self, message='Quickbase has returned an error 75 or 82 when making a query for less than 100 records. Something is wrong.'):
+    def __init__(self, message='Quickbase has returned an error 75 when making a query for less than 100 records. Something is wrong.'):
         self.message = message
         super().__init__(self.message)
 
+
+class QuickbaseQueryError(Exception):
+    def __init__(self, message='Quickbase has returned an error 82, indicating it refuses to perform this query because it takes too long.'):
+        self.message = message
+        super().__init__(self.message)
 
 
 class Analytics:
@@ -287,9 +292,11 @@ class QuickbaseAction():
             self.request.data = self.request.data.replace(b'usertoken', b'ticket')
             self.app.authentication_type = 'ticket'
             self.performAction(retry=True)
-        elif self.errcode == '75' or self.errcode == '82':  # this will happen with very large queries
+        elif self.errcode == '75':  # this will happen with very large queries
             self.error_75_retry = True
             self.response = recursive_query(self).response
+        elif self.errcode == '82':
+            raise QuickbaseQueryError
         else:
             if self.action == "API_DoQuery":
                 self.etree_content = parseQueryContent(self.content)
