@@ -103,3 +103,5 @@ $RECYCLE.BIN/
 
 # PyCharm settings
 .idea
+
+/smtp.cfg*

@@ -7,10 +7,12 @@ from quickbase import generate_quickbase_app
 
 
 if __name__ == '__main__':
-    CIC = generate_quickbase_app(baseUrl='https://michaelherman.quickbase.com/db/', foo='bar')
-    v = quickbase.getTableFIDDict(CIC, 'clients', return_reverse=True)
-    v.performAction()
-    print(v)
+    CIC = generate_quickbase_app('quickbase\CIC.cfg')
+    CIC.roles = quickbase.getTableFIDDict(CIC, 'roles', return_alphanumeric=True)
+    clist = [CIC.roles['friend_of_cic_c3_host'], '3']
+    focic_roles = quickbase.QuickbaseAction(CIC, 'roles', 'query', query="{"+CIC.roles['price___qb_item_description']+".CT.'Friend of'}", clist=clist)
+    focic_roles.performAction()
+    print(focic_roles)
     # app = generate_quickbase_app()
     #
     # query = "query={3.EX.'93'}"

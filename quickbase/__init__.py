@@ -22,10 +22,24 @@ import pytz
 from urllib.parse import urlparse
 from influxdb import InfluxDBClient
 
+import quickbase
 DEFAULT_TIMEOUT = 10  # default request timeout in seconds
 
-class AuthentcationError(Exception):
+class AuthenticationError(Exception):
+
     def __init__(self, message='Authentication String Invalid'):
+        self.message = message
+        super().__init__(self.message)
+
+
+class QuickbaseError(Exception):
+    def __init__(self, message='Quickbase has returned an error 75 when making a query for less than 100 records. Something is wrong.'):
+        self.message = message
+        super().__init__(self.message)
+
+
+class QuickbaseQueryError(Exception):
+    def __init__(self, message='Quickbase has returned an error 82, indicating it refuses to perform this query because it takes too long.'):
         self.message = message
         super().__init__(self.message)
 
@@ -157,7 +171,8 @@ class QuickbaseAction():
     also contain any response from Quickbase
     """
     def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
-                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False, custom_body=None):
+                 skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False,
+                 custom_body=None, record_return=None, error_75_retry=False, record_count=None):
         """
 
         :param app: class QuickbaseApp
@@ -174,7 +189,11 @@ class QuickbaseAction():
         self.app = app
         self.force_utf8 = force_utf8
         self.skip_first = skip_first
-
+        self.dbid_key = dbid_key
+        self.record_return = record_return
+        self.record_count = record_count
+        self.error_75_retry = error_75_retry
+        self.options = options
         if dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
@@ -234,8 +253,7 @@ class QuickbaseAction():
             <qdbapi>
                 %s""" % custom_body
 
-        if options is not None:
-            self.options = options  # custom options
+        if self.options is not None:  # custom options
             self.data = self.data + """
             <options>%s</options>
             """ % self.options
@@ -245,7 +263,7 @@ class QuickbaseAction():
         self.request.data = self.data.encode('utf-8')
 
 
-    def performAction(self, retry=False):
+    def performAction(self, retry=False, **kwargs):
         """Performs the action defined by the QuickbaseAction object, and maps the response to an attribute
 
         :return: response
@@ -255,29 +273,38 @@ class QuickbaseAction():
         Analytics().collect(tags={'action': self.action})
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
-        if b'<errcode>4</errcode' in self.content:
+        self.head_content = etree.fromstring(self.content.split(b'</errtext>')[0]+b'</errtext>\r\n</qdbapi>')
+        self.errcode = self.head_content.find('errcode').text
+        self.errtext = self.head_content.find('errtext').text
+
+        if self.errcode == '4':
             if retry:
-                raise AuthentcationError
+                raise AuthenticationError
             self.app.authentication_string = self.app.authentication_string.replace('ticket', 'usertoken')
             self.data = self.data.replace('ticket', 'usertoken')
             self.request.data = self.request.data.replace(b'ticket', b'usertoken')
             self.app.authentication_type = 'usertoken'
             self.performAction(retry=True)
-        elif b'<errcode>83</errcode>' in self.content:
+        elif self.errcode == '83':
             if retry:
-                raise AuthentcationError
+                raise AuthenticationError
             self.app.authentication_string = self.app.authentication_string.replace('usertoken', 'ticket')
             self.data = self.data.replace('usertoken', 'ticket')
             self.request.data = self.request.data.replace(b'usertoken', b'ticket')
             self.app.authentication_type = 'ticket'
             self.performAction(retry=True)
+        elif self.errcode == '75':  # this will happen with very large queries
+            self.error_75_retry = True
+            self.response = recursive_query(self).response
+        elif self.errcode == '82':
+            raise QuickbaseQueryError
         else:
             if self.action == "API_DoQuery":
                 self.etree_content = parseQueryContent(self.content)
             else:
                 try:
                     self.etree_content = etree.fromstring(self.content)
-                except xml.etree.ElementTree.ParseError as err:
+                except etree.ParseError as err:
                     try:
                         parser = etree.XMLParser(encoding='cp1252')
                         self.etree_content = etree.fromstring(self.content, parser=parser)
@@ -631,7 +658,7 @@ def generate_quickbase_app(config='CIC.cfg', baseUrl="https://cictr.quickbase.co
     cic_tables = generateTableDict(config)
     # baseUrl = "https://cictr.quickbase.com/db/"
     if auth_key is not None:
-        CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
+        CIC = QuickbaseApp(baseUrl, ticket=auth_key, tables=cic_tables, **kwargs)
     elif 'ticket' in cic_tables:
         ticket = cic_tables['ticket']
         CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
@@ -1150,7 +1177,7 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
 
     Analytics().collect(tags={'action': 'download_file'})
 
-def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None):
+def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None, user="noreply@cictr.com"):
     """
 
     :rtype : object
@@ -1182,7 +1209,7 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
         r = csv.reader(config_file)
         for row in r:
             authenticator[row[0]] = row[1]
-    user = "noreply@cictr.com"
+
     passwd = authenticator[user]
 
     msg = MIMEMultipart()
@@ -1202,3 +1229,48 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
     smtp.send_message(msg)
     smtp.quit()
     # syslog.syslog("Email sent to " + str(toaddr))
+
+
+def recursive_query(query_object):
+    if query_object.record_return is None:  # We start with a best guess of 5000 as an allowed number of records returned
+        query_object.record_count = QuickbaseAction(query_object.app, query_object.dbid_key, 'querycount',
+                                                    query=query_object.query).performAction()
+        if int(query_object.record_count) >= 8192:
+            query_object.record_return = 8192
+        else:
+            query_object.record_return = int(int(query_object.record_count) / 2)
+    elif query_object.record_return < 100 and query_object.error_75_retry:
+        raise QuickbaseError
+    elif query_object.error_75_retry:  # If that does not work, we halve the number of records returned
+        query_object.record_return = int(query_object.record_return / 2)
+        query_object.error_75_retry = False
+        query_object = recursive_query(query_object)
+    options = str()
+    if query_object.options is not None:
+        existing_options = query_object.options.split('.')
+        for option in existing_options:
+            if 'num-' not in option and 'skp-' not in option:
+                options += '.' + option
+    options += '.num-' + str(query_object.record_return)
+    if query_object.response is not None:
+        if len(query_object.response.values) >= int(query_object.record_count):
+            return query_object
+        options += '.skp-' + str(len(query_object.response.values))
+    if options[0] == '.':
+        options = options[1:]
+    fractional_query = QuickbaseAction(query_object.app,
+                                       query_object.dbid_key,
+                                       'query',
+                                       query=query_object.query,
+                                       clist=query_object.clist,
+                                       options=options,
+                                       slist=query_object.slist,
+                                       record_return=query_object.record_return,
+                                       record_count=query_object.record_count)
+    fractional_query.performAction()
+    if query_object.response is None:
+        query_object.response = fractional_query.response
+    else:
+        query_object.response.values.extend(fractional_query.response.values)
+    query_object = recursive_query(query_object)
+    return query_object
