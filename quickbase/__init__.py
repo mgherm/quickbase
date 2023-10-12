@@ -1194,9 +1194,11 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
     subject = sub
     content = ""
     if con:
-        for line in con:
-            content += (str(line) + '\r\n')
-
+        if type(con) == list:
+            for line in con:
+                content += (str(line) + '\r\n')
+        elif type(con) == str:
+            content = con
     if file_path:
         attachment = MIMEBase('appplication', 'octet-stream')
         with open(file_path, 'rb') as attached_file:
