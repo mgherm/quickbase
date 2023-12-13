@@ -170,7 +170,7 @@ class QuickbaseAction():
     QuickbaseAction objects contain the parameters for a request to quickbase, and after being executed (performAction)
     also contain any response from Quickbase
     """
-    def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
+    def __init__(self, app, dbid_key=None, action=None, query=None, clist=None, slist=None, return_records=None, data=None,
                  skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False,
                  custom_body=None, record_return=None, error_75_retry=False, record_count=None):
         """
@@ -194,8 +194,10 @@ class QuickbaseAction():
         self.record_count = record_count
         self.error_75_retry = error_75_retry
         self.options = options
-        if dbid_key in self.app.tables: # build the request url
+        if dbid_key is not None and dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
+        elif dbid_key is None:
+            self.request = urllib.request.Request(self.app.base_url + self.app.tables['Application'])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
             self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower() # assign the correct Quickbase API command based on the action string
