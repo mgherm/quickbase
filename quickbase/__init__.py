@@ -172,7 +172,7 @@ class QuickbaseAction():
     """
     def __init__(self, app, dbid_key=None, action=None, query=None, clist=None, slist=None, return_records=None, data=None,
                  skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False,
-                 custom_body=None, record_return=None, error_75_retry=False, record_count=None):
+                 custom_body='', record_return=None, error_75_retry=False, record_count=None):
         """
 
         :param app: class QuickbaseApp
@@ -253,7 +253,8 @@ class QuickbaseAction():
         else:   # implies an action not otherwise handled
             self.data = """
             <qdbapi>
-                %s""" % custom_body
+                %s
+                %s""" % (self.app.authentication_string, custom_body)
 
         if self.options is not None:  # custom options
             self.data = self.data + """
