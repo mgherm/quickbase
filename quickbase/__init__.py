@@ -19,8 +19,8 @@ from email import encoders
 
 import os
 import pytz
-from urllib.parse import urlparse
-from influxdb import InfluxDBClient
+# from urllib.parse import urlparse
+# from influxdb import InfluxDBClient
 
 import quickbase
 DEFAULT_TIMEOUT = 10  # default request timeout in seconds
@@ -44,84 +44,84 @@ class QuickbaseQueryError(Exception):
         super().__init__(self.message)
 
 
-class Analytics:
-    """ Class for gathering Quickbase usage statistics """
-
-    def __init__(self, events_db_url=None, verify_ssl=True):
-        """
-        Initializes class for collecting Quickbase usage statistics. It should gracefully abort on failure
-        :param events_db_url: URL to Influx DB. Optional - it could also be passed by env variable. If no events_db_url
-        is given, it fails gracefully
-        """
-        self.collecting = False
-
-        try:
-            if not events_db_url:
-                events_db_url = os.environ.get('EVENTS_DB_URL')
-
-            if events_db_url:
-                parsed_url = urlparse(events_db_url)
-                self.influxdb_host = parsed_url.hostname
-                self.influxdb_port = parsed_url.port
-                self.influxdb_user = parsed_url.username
-                self.influxdb_pass = parsed_url.password
-                self.influxdb_db = parsed_url.path[1:]
-                self.influxdb_scheme = parsed_url.scheme
-
-                if parsed_url.scheme == 'https':
-                    self.influxdb_ssl = True
-                else:
-                    self.influxdb_ssl = False
-
-                self.influxdb = InfluxDBClient(
-                    self.influxdb_host,
-                    self.influxdb_port,
-                    self.influxdb_user,
-                    self.influxdb_pass,
-                    self.influxdb_db,
-                    self.influxdb_ssl,
-                    verify_ssl
-                )
-
-                self.collecting = True
-        except Exception:
-            pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
-
-    def collect(self, measurement='quickbase_api_call', tags=None, ts=None, fields=None):
-        """
-        Collects a data point
-        :param measurement: Name of measurement
-        :param tags: A dict of tags
-        :param ts: Datetime object. Optional
-        :param fields: A dict of fields. Defaults to {'value': 1}
-        """
-
-        if self.collecting:
-            try:
-                point = {
-                    'measurement': measurement,
-                    'tags': {
-                        'env': os.environ.get('GSET_ENV', ''),
-                        'container': os.environ.get('GSET_CONTAINER', '')
-                    },
-                    'time': datetime.datetime.now(tz=pytz.UTC),
-                    'fields': {
-                        'value': 1
-                    }
-                }
-
-                if tags:
-                    point['tags'].update(tags)
-
-                if ts:
-                    point['time'] = ts
-
-                if fields:
-                    point['fields'].update(fields)
-
-                self.influxdb.write_points([point], database=self.influxdb_db)
-            except Exception as e:
-                pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
+# class Analytics:
+#     """ Class for gathering Quickbase usage statistics """
+#
+#     def __init__(self, events_db_url=None, verify_ssl=True):
+#         """
+#         Initializes class for collecting Quickbase usage statistics. It should gracefully abort on failure
+#         :param events_db_url: URL to Influx DB. Optional - it could also be passed by env variable. If no events_db_url
+#         is given, it fails gracefully
+#         """
+#         self.collecting = False
+#
+#         try:
+#             if not events_db_url:
+#                 events_db_url = os.environ.get('EVENTS_DB_URL')
+#
+#             if events_db_url:
+#                 parsed_url = urlparse(events_db_url)
+#                 self.influxdb_host = parsed_url.hostname
+#                 self.influxdb_port = parsed_url.port
+#                 self.influxdb_user = parsed_url.username
+#                 self.influxdb_pass = parsed_url.password
+#                 self.influxdb_db = parsed_url.path[1:]
+#                 self.influxdb_scheme = parsed_url.scheme
+#
+#                 if parsed_url.scheme == 'https':
+#                     self.influxdb_ssl = True
+#                 else:
+#                     self.influxdb_ssl = False
+#
+#                 self.influxdb = InfluxDBClient(
+#                     self.influxdb_host,
+#                     self.influxdb_port,
+#                     self.influxdb_user,
+#                     self.influxdb_pass,
+#                     self.influxdb_db,
+#                     self.influxdb_ssl,
+#                     verify_ssl
+#                 )
+#
+#                 self.collecting = True
+#         except Exception:
+#             pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
+#
+#     def collect(self, measurement='quickbase_api_call', tags=None, ts=None, fields=None):
+#         """
+#         Collects a data point
+#         :param measurement: Name of measurement
+#         :param tags: A dict of tags
+#         :param ts: Datetime object. Optional
+#         :param fields: A dict of fields. Defaults to {'value': 1}
+#         """
+#
+#         if self.collecting:
+#             try:
+#                 point = {
+#                     'measurement': measurement,
+#                     'tags': {
+#                         'env': os.environ.get('GSET_ENV', ''),
+#                         'container': os.environ.get('GSET_CONTAINER', '')
+#                     },
+#                     'time': datetime.datetime.now(tz=pytz.UTC),
+#                     'fields': {
+#                         'value': 1
+#                     }
+#                 }
+#
+#                 if tags:
+#                     point['tags'].update(tags)
+#
+#                 if ts:
+#                     point['time'] = ts
+#
+#                 if fields:
+#                     point['fields'].update(fields)
+#
+#                 self.influxdb.write_points([point], database=self.influxdb_db)
+#             except Exception as e:
+#                 pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
 
 class QuickbaseApp():
     def __init__(self, baseurl='https://cictr.quickbase.com/db/', ticket=None, tables=None, token=None, **kwargs):
@@ -170,9 +170,9 @@ class QuickbaseAction():
     QuickbaseAction objects contain the parameters for a request to quickbase, and after being executed (performAction)
     also contain any response from Quickbase
     """
-    def __init__(self, app, dbid_key, action, query=None, clist=None, slist=None, return_records=None, data=None,
+    def __init__(self, app, dbid_key=None, action=None, query=None, clist=None, slist=None, return_records=None, data=None,
                  skip_first="0", time_in_utc=False, confirmation=False, options=None, force_utf8=False,
-                 custom_body=None, record_return=None, error_75_retry=False, record_count=None):
+                 custom_body='', record_return=None, error_75_retry=False, record_count=None):
         """
 
         :param app: class QuickbaseApp
@@ -194,8 +194,10 @@ class QuickbaseAction():
         self.record_count = record_count
         self.error_75_retry = error_75_retry
         self.options = options
-        if dbid_key in self.app.tables: # build the request url
+        if dbid_key is not None and dbid_key in self.app.tables: # build the request url
             self.request = urllib.request.Request(self.app.base_url + self.app.tables[dbid_key])
+        elif dbid_key is None:
+            self.request = urllib.request.Request(self.app.base_url + self.app.tables['Application'])
         else:   # assume any dbid_key not in app.tables is the actual dbid string
             self.request = urllib.request.Request(self.app.base_url + dbid_key)
         self.action_string = action.lower() # assign the correct Quickbase API command based on the action string
@@ -251,7 +253,8 @@ class QuickbaseAction():
         else:   # implies an action not otherwise handled
             self.data = """
             <qdbapi>
-                %s""" % custom_body
+                %s
+                %s""" % (self.app.authentication_string, custom_body)
 
         if self.options is not None:  # custom options
             self.data = self.data + """
@@ -270,7 +273,7 @@ class QuickbaseAction():
         """
         self.response_object = urllib.request.urlopen(self.request, timeout=DEFAULT_TIMEOUT) # do the thing
 
-        Analytics().collect(tags={'action': self.action})
+        # Analytics().collect(tags={'action': self.action})
         self.status = self.response_object.status   # status response. Hopefully starts with a 2
         self.content = self.response_object.read().replace(b'<BR/>', b'')
         self.head_content = etree.fromstring(self.content.split(b'</errtext>')[0]+b'</errtext>\r\n</qdbapi>')
@@ -816,7 +819,7 @@ def QBQuery(url, ticket, dbid, request, clist, slist="0", returnRecords=False):
     query.data = data.encode('utf-8')
     content = urllib.request.urlopen(query, timeout=DEFAULT_TIMEOUT).read()
 
-    Analytics().collect(tags={'action': action})
+    # Analytics().collect(tags={'action': action})
 
     if not returnRecords:
         return content
@@ -850,7 +853,7 @@ def QBAdd(url, ticket, dbid, fieldValuePairs):
     query.data = data.encode('utf-8')
     response = urllib.request.urlopen(query, timeout=DEFAULT_TIMEOUT)
 
-    Analytics().collect(tags={'action': action})
+    # Analytics().collect(tags={'action': action})
 
     return response
 
@@ -986,7 +989,7 @@ def QBEdit(url, ticket, dbid, rid, field, value):
     query.data = data.encode('utf-8')
     response = urllib.request.urlopen(query, timeout=DEFAULT_TIMEOUT)
 
-    Analytics().collect(tags={'action': action})
+    # Analytics().collect(tags={'action': action})
 
     return response
 
@@ -1081,7 +1084,7 @@ def UploadCsv(url, ticket, dbid, csvData, clist, skipFirst=0):
     request.data = data.encode('utf-8')
     response = urllib.request.urlopen(request, timeout=DEFAULT_TIMEOUT).read()
 
-    Analytics().collect(tags={'action': action})
+    # Analytics().collect(tags={'action': action})
 
     return response
 
@@ -1100,7 +1103,7 @@ def DownloadCSV(base_url, ticket, dbid, report_id, file_name="report.csv"):
     urllib.request.urlretrieve(base_url + dbid + "?a=q&qid=" + str(report_id) + "&dlta=xs%7E&ticket=" + ticket,
                                csv_file)
 
-    Analytics().collect(tags={'action': 'download_csv'})
+    # Analytics().collect(tags={'action': 'download_csv'})
 
 
 def csvSort(input_file,
@@ -1175,7 +1178,7 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
     with open(filename, 'wb') as downloaded_file:
         downloaded_file.write(response)
 
-    Analytics().collect(tags={'action': 'download_file'})
+    # Analytics().collect(tags={'action': 'download_file'})
 
 def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None, user="noreply@cictr.com"):
     """
@@ -1194,9 +1197,11 @@ def email(sub, destination=None, con=None, file_path=None, file_name=None, froma
     subject = sub
     content = ""
     if con:
-        for line in con:
-            content += (str(line) + '\r\n')
-
+        if type(con) == list:
+            for line in con:
+                content += (str(line) + '\r\n')
+        elif type(con) == str:
+            content = con
     if file_path:
         attachment = MIMEBase('appplication', 'octet-stream')
         with open(file_path, 'rb') as attached_file:
