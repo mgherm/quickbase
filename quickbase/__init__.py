@@ -124,7 +124,7 @@ class QuickbaseQueryError(Exception):
 #                 pass  # it's done on purpose to gracefully disable analytics in case of any unexpected error
 
 class QuickbaseApp():
-    def __init__(self, baseurl='https://cictr.quickbase.com/db/', ticket=None, tables=None, token=None, **kwargs):
+    def __init__(self, baseurl='', ticket=None, tables=None, token=None, **kwargs):
         """Basic unit storing useful information for communicating with Quickbase
 
         :param baseurl: String, https://<domain>.quickbase.com/db/
@@ -133,12 +133,12 @@ class QuickbaseApp():
         :param token: For future use
         :return:
         """
-        self.base_url = baseurl   # generally https://cictr.quickbase.com/db/, the base url for all CIC quickbase apps
+        self.base_url = baseurl   # generally https://something.quickbase.com/db/
         self.ticket = ticket    # authentication ticket
         self.token = token      # authentication token
 
         if tables == None:
-            self.tables = generateTableDict('./CIC.cfg')
+            self.tables = generateTableDict('./site-config.cfg')
         else:
             self.tables = tables
         if ticket is None and token is None:
@@ -653,23 +653,22 @@ class UTC(datetime.tzinfo):
     def tzname(self, dt):
         return "UTC"
 
-def generate_quickbase_app(config='CIC.cfg', baseUrl="https://cictr.quickbase.com/db/", auth_key=None, **kwargs):
+def generate_quickbase_app(config='app-config.cfg', baseUrl="", auth_key=None, **kwargs):
     """
     Generates a quickbase.QuickbaseApp to be used in all queries against the quickbase database
-    :return CIC: quickbase.QuickbaseApp with all necessary parameters to perform queries and actions
+    :return APP: quickbase.QuickbaseApp with all necessary parameters to perform queries and actions
     """
-    cic_tables = generateTableDict(config)
-    # baseUrl = "https://cictr.quickbase.com/db/"
+    app_tables = generateTableDict(config)
     if auth_key is not None:
-        CIC = QuickbaseApp(baseUrl, ticket=auth_key, tables=cic_tables, **kwargs)
-    elif 'ticket' in cic_tables:
-        ticket = cic_tables['ticket']
-        CIC = QuickbaseApp(baseUrl, ticket=ticket, tables=cic_tables, **kwargs)
+        APP = QuickbaseApp(baseUrl, ticket=auth_key, tables=app_tables, **kwargs)
+    elif 'ticket' in app_tables:
+        ticket = app_tables['ticket']
+        APP = QuickbaseApp(baseUrl, ticket=ticket, tables=app_tables, **kwargs)
     else:
-        assert 'token' in cic_tables
-        token = cic_tables['token']
-        CIC = QuickbaseApp(baseUrl, token=token, tables=cic_tables, **kwargs)
-    return CIC
+        assert 'token' in app_tables
+        token = app_tables['token']
+        APP = QuickbaseApp(baseUrl, token=token, tables=app_tables, **kwargs)
+    return APP
 
 
 def parseQueryContent(content):
@@ -1159,7 +1158,7 @@ def csvSort(input_file,
         for line in sorted_lines:
             w.writerow(line)
 
-def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cictr.quickbase.com/'):
+def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl=''):
     """
     DEPRECATED
     :param dbid:
@@ -1180,60 +1179,6 @@ def downloadFile(dbid, ticket, rid, fid, filename, vid='0', baseurl='https://cic
 
     # Analytics().collect(tags={'action': 'download_file'})
 
-def email(sub, destination=None, con=None, file_path=None, file_name=None, fromaddr=None, smtp_cfg=None, user="noreply@cictr.com"):
-    """
-
-    :rtype : object
-    """
-    COMMASPACE = ', '
-    if fromaddr is None:
-        fromaddr = "noreply@cictr.com"
-    if not destination:
-        toaddr = ["herman@cictr.com"]
-    else:
-        toaddr = destination
-    if smtp_cfg is None:
-        smtp_cfg = "smtp.cfg"
-    subject = sub
-    content = ""
-    if con:
-        if type(con) == list:
-            for line in con:
-                content += (str(line) + '\r\n')
-        elif type(con) == str:
-            content = con
-    if file_path:
-        attachment = MIMEBase('appplication', 'octet-stream')
-        with open(file_path, 'rb') as attached_file:
-            attachment.set_payload(attached_file.read())
-        encoders.encode_base64(attachment)
-        attachment.add_header('Content-disposition', 'attachment; filename='+file_name)
-
-    authenticator = dict()
-    with open(smtp_cfg, 'r') as config_file:
-        r = csv.reader(config_file)
-        for row in r:
-            authenticator[row[0]] = row[1]
-
-    passwd = authenticator[user]
-
-    msg = MIMEMultipart()
-    msg['Subject'] = subject
-    msg['From'] = fromaddr
-    msg['To'] = COMMASPACE.join(toaddr)
-    msg.attach(MIMEText(content))
-    if file_path:
-        msg.attach(attachment)
-    smtp = smtplib.SMTP("costner.cictr.com", port=587)
-    # smtp.set_debuglevel(1)
-    smtp.ehlo()
-    smtp.starttls()
-    smtp.ehlo()
-    smtp.login(user, passwd)
-    # smtp.docmd('AUTH', 'XOAUTH2 ' + authString.decode('utf-8'))
-    smtp.send_message(msg)
-    smtp.quit()
-    # syslog.syslog("Email sent to " + str(toaddr))
 
 
 def recursive_query(query_object):
